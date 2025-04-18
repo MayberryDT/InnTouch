@@ -31,7 +31,7 @@ async function updateChatStatus({ guest_id, status, message_count, assigned_staf
   try {
     console.log(`[DEBUG-DB updateChatStatus] Checking for existing status for guest ${guest_id}`);
     const existingStatus = await db.get(
-      'SELECT id FROM chat_status WHERE guest_id = ?',
+      'SELECT id FROM chat_status WHERE guest_id = $1',
       [guest_id]
     );
     console.log(`[DEBUG-DB updateChatStatus] Existing status:`, existingStatus);
@@ -40,43 +40,43 @@ async function updateChatStatus({ guest_id, status, message_count, assigned_staf
       console.log(`[DEBUG-DB updateChatStatus] Updating existing record ID: ${existingStatus.id}`);
       const query = `
         UPDATE chat_status 
-        SET status = ?, 
-            message_count = ?, 
-            last_updated = ?,
-            assigned_staff_id = ?
-        WHERE guest_id = ?
+        SET status = $1, 
+            message_count = $2, 
+            last_updated = $3::timestamptz,
+            assigned_staff_id = $4
+        WHERE guest_id = $5
       `;
       const params = [
         status,
-        count, // Use sanitized count
+        count,
         timestamp,
         assigned_staff_id || null,
         guest_id
       ];
       await db.run(query, params);
       console.log(`[DEBUG-DB updateChatStatus] Record updated successfully.`);
-      return existingStatus.id; // Return existing ID
+      return existingStatus.id;
     } else {
       console.log(`[DEBUG-DB updateChatStatus] Creating new record for guest ${guest_id}`);
       const query = `
         INSERT INTO chat_status 
         (guest_id, status, message_count, last_updated, assigned_staff_id)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4::timestamptz, $5) RETURNING id
       `;
       const params = [
         guest_id,
         status,
-        count, // Use sanitized count
+        count,
         timestamp,
         assigned_staff_id || null
       ];
-      const result = await db.run(query, params);
+      const result = await db.query(query, params);
       console.log(`[DEBUG-DB updateChatStatus] New record created. Result:`, result);
-      if (result && typeof result.lastID !== 'undefined') {
-          return result.lastID; // Return new ID
+      if (result && result.rows.length > 0) {
+        return result.rows[0].id;
       } else {
-          console.error("[DEBUG-DB updateChatStatus] db.run did not return expected result object with lastID.", result);
-          throw new Error('Failed to get last inserted ID after creating status record.');
+        console.error("[DEBUG-DB updateChatStatus] Insert query did not return an ID.", result);
+        throw new Error('Failed to get last inserted ID after creating status record.');
       }
     }
   } catch (error) {
@@ -98,7 +98,7 @@ async function getChatStatus(guestId) {
   const query = `
     SELECT id, guest_id, status, message_count, last_updated, assigned_staff_id
     FROM chat_status
-    WHERE guest_id = ?
+    WHERE guest_id = $1
   `;
 
   try {
@@ -253,13 +253,13 @@ async function markChatAcknowledged(guestId) {
   }
   try {
     console.log(`[DEBUG-DB] Marking chat acknowledged for guest ${guestId}`);
-    // Let's update status to 'closed' for now, removing the requirement that it must be 'escalated'.
+    const query = 'UPDATE chat_status SET status = $1, assigned_staff_id = NULL WHERE guest_id = $2';
     const result = await db.run(
-      'UPDATE chat_status SET status = ?, assigned_staff_id = NULL WHERE guest_id = ?',
+      query,
       ['closed', guestId]
     );
     console.log(`[DEBUG-DB] Acknowledgment result for guest ${guestId}:`, result);
-    return result.changes > 0;
+    return result > 0;
   } catch (error) {
     console.error(`[DEBUG-DB] Error marking chat acknowledged for guest ${guestId}:`, error);
     throw error;

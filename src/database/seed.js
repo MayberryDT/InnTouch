@@ -90,26 +90,40 @@ async function seed() {
     await db.initDatabase();
     
     console.log('Seeding guests table...');
+    const guestInsertQuery = `
+      INSERT INTO guests (name, room_number, check_in, check_out, cloudbeds_data) 
+      VALUES ($1, $2, $3::timestamptz, $4::timestamptz, $5::jsonb)
+    `;
     for (const guest of guests) {
-      await db.run(
-        'INSERT INTO guests (name, room_number, check_in, check_out, cloudbeds_data) VALUES (?, ?, ?, ?, ?)',
-        [guest.name, guest.room_number, guest.check_in, guest.check_out, guest.cloudbeds_data]
-      );
+      await db.run(guestInsertQuery, [
+        guest.name, 
+        guest.room_number, 
+        guest.check_in, 
+        guest.check_out, 
+        guest.cloudbeds_data
+      ]);
     }
     
     console.log('Seeding bookings table...');
+    const bookingInsertQuery = `
+      INSERT INTO bookings (guest_id, type, details, status, timestamp) 
+      VALUES ($1, $2, $3::jsonb, $4, $5::timestamptz)
+    `;
     for (const booking of bookings) {
-      await db.run(
-        'INSERT INTO bookings (guest_id, type, details, status, timestamp) VALUES (?, ?, ?, ?, ?)',
-        [booking.guest_id, booking.type, booking.details, booking.status, booking.timestamp]
-      );
+      await db.run(bookingInsertQuery, [
+        booking.guest_id, 
+        booking.type, 
+        booking.details,
+        booking.status, 
+        booking.timestamp
+      ]);
     }
     
     // Log seeded data summary
-    const guestCount = await db.get('SELECT COUNT(*) as count FROM guests');
-    const bookingCount = await db.get('SELECT COUNT(*) as count FROM bookings');
+    const guestCountResult = await db.get('SELECT COUNT(*) as count FROM guests');
+    const bookingCountResult = await db.get('SELECT COUNT(*) as count FROM bookings');
     
-    console.log(`Database seeded successfully with ${guestCount.count} guests and ${bookingCount.count} bookings.`);
+    console.log(`Database seeded successfully with ${guestCountResult.count} guests and ${bookingCountResult.count} bookings.`);
     console.log('Amenities available for booking:', amenities.map(a => a.name).join(', '));
     console.log('Tours available for booking:', tours.map(t => t.name).join(', '));
     

@@ -9,7 +9,7 @@ const getGuestById = async (id) => { // Make async
   const query = `
     SELECT id, name, room_number, check_in, check_out 
     FROM guests 
-    WHERE id = ?
+    WHERE id = $1
   `;
   // Use await with the promisified db.get
   return await db.get(query, [id]); 
@@ -54,7 +54,7 @@ const saveGuest = async (guestData) => { // Make async
   // First check if guest with this name and room exists (for updating)
   const checkQuery = `
     SELECT id FROM guests 
-    WHERE name = ? AND room_number = ?
+    WHERE name = $1 AND room_number = $2
   `;
   
   // Use await with promisified db.get
@@ -64,13 +64,14 @@ const saveGuest = async (guestData) => { // Make async
     // Update existing guest
     const updateQuery = `
       UPDATE guests
-      SET check_in = ?,
-          check_out = ?,
-          cloudbeds_data = ?
-      WHERE id = ?
+      SET check_in = $1,
+          check_out = $2,
+          cloudbeds_data = $3
+      WHERE id = $4
     `;
     
-    const result = await db.run(updateQuery, [
+    // Use db.run which is suitable for UPDATE/INSERT/DELETE without RETURNING
+    await db.run(updateQuery, [
       guestData.check_in,
       guestData.check_out,
       guestData.cloudbeds_data,
@@ -83,10 +84,11 @@ const saveGuest = async (guestData) => { // Make async
     // Insert new guest
     const insertQuery = `
       INSERT INTO guests (name, room_number, check_in, check_out, cloudbeds_data)
-      VALUES (?, ?, ?, ?, ?)
+      VALUES ($1, $2, $3, $4, $5) RETURNING id
     `;
     
-    const result = await db.run(insertQuery, [
+    // Use db.query for INSERT with RETURNING
+    const result = await db.query(insertQuery, [
       guestData.name,
       guestData.room_number,
       guestData.check_in,
@@ -95,8 +97,12 @@ const saveGuest = async (guestData) => { // Make async
     ]);
     
     // Return the new guest with the generated ID
-    // The promisified db.run resolves with { lastID, changes }
-    return { id: result.lastID, ...guestData, created: true };
+    const newId = result.rows[0]?.id;
+    if (newId === undefined) {
+      console.error("Insert query did not return an ID.");
+      throw new Error("Failed to retrieve ID for new guest.");
+    }
+    return { id: newId, ...guestData, created: true };
   }
 };
 
@@ -110,7 +116,7 @@ const getAllActiveGuests = async () => { // Make async
   const query = `
     SELECT id, name, room_number, check_in, check_out 
     FROM guests 
-    WHERE check_out > ?
+    WHERE check_out > $1
     ORDER BY room_number
   `;
   
@@ -149,9 +155,9 @@ const findActiveGuestByRoom = async (roomNumber) => {
   const query = `
     SELECT id, name, room_number 
     FROM guests 
-    WHERE room_number = ? 
+    WHERE room_number = $1 
       -- Compare full timestamps directly
-      AND check_out > ? 
+      AND check_out > $2 
     LIMIT 1; -- Return only one guest even if multiple share a room (unlikely but safe)
   `;
   // Use await with the promisified db.get

@@ -670,7 +670,7 @@ async function getGuestInfo(guestId) {
   const query = `
     SELECT id, name, room_number
     FROM guests
-    WHERE id = ?
+    WHERE id = $1
   `;
   
   try {

@@ -63,19 +63,24 @@ async function getAllTimeSlots(type, name) {
 async function getBookedTimeSlots(type, name, date) {
   try {
     // Query the database for existing bookings on this date for this service
-    const bookings = await db.all(
-      `SELECT details FROM bookings 
-       WHERE type = ? AND 
-             json_extract(details, '$.name') = ? AND 
-             json_extract(details, '$.date') = ?`,
-      [type, name, date]
-    );
+    // Use PostgreSQL JSONB path query and casting
+    const query = `
+      SELECT details 
+      FROM bookings 
+      WHERE type = $1 
+        AND jsonb_path_query_first(details::jsonb, '$.name') = to_jsonb($2::text)
+        AND jsonb_path_query_first(details::jsonb, '$.date')::text = to_jsonb($3::text)::text
+        AND status != 'cancelled'
+    `; // Changed ?, json_extract to PG equivalents, added status check
+    
+    const bookings = await db.all(query, [type, name, date]);
     
     // Extract the booked times
     return bookings.map(booking => {
-      const details = JSON.parse(booking.details);
-      return details.time;
-    });
+      // Details are already JSONB in the DB, but db.all returns JS objects
+      // Assuming the time is stored as HH:MM in the details.time field
+      return booking.details?.time; 
+    }).filter(time => !!time); // Filter out any null/undefined times
   } catch (err) {
     console.error('Error getting booked time slots:', err.message);
     throw err;

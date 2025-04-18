@@ -58,10 +58,10 @@ const getBookedTimeSlots = async (type, name, date) => {
     const query = `
       SELECT details 
       FROM bookings 
-      WHERE type = ? 
+      WHERE type = $1 
       AND status != 'cancelled' 
-      AND json_extract(details, '$.name') = ?
-      AND date(json_extract(details, '$.time')) = ?
+      AND jsonb_path_query_first(details::jsonb, '$.name') = to_jsonb($2::text)
+      AND date(jsonb_path_query_first(details::jsonb, '$.time')::text::timestamptz) = $3::date
     `;
     
     const bookings = await db.all(query, [type, name, date]);
@@ -145,12 +145,24 @@ async function saveBooking(booking) {
     // Use a transaction to ensure data integrity
     return await db.transaction(async (trx) => {
       // Insert the booking
-      const result = await trx.run(
-        'INSERT INTO bookings (guest_id, type, details, status, timestamp) VALUES (?, ?, ?, ?, ?)',
-        [booking.guest_id, booking.type, booking.details, booking.status, booking.timestamp]
-      );
+      const insertQuery = `
+        INSERT INTO bookings (guest_id, type, details, status, timestamp) 
+        VALUES ($1, $2, $3::jsonb, $4, NOW()) RETURNING id
+      `;
+      const params = [
+        booking.guest_id, 
+        booking.type, 
+        booking.details,
+        booking.status || 'pending' 
+      ];
+
+      // Use client.query for RETURNING
+      const result = await trx.query(insertQuery, params);
       
-      return result.lastID;
+      if (result.rows.length === 0) {
+        throw new Error('Booking insert did not return an ID.');
+      }
+      return result.rows[0].id;
     });
   } catch (err) {
     console.error('Error saving booking:', err.message);
@@ -166,10 +178,11 @@ async function saveBooking(booking) {
 async function getGuestBookings(guestId) {
   try {
     // Query the database for all bookings for this guest
-    const bookings = await db.all(
-      'SELECT id, guest_id, type, details, status, timestamp FROM bookings WHERE guest_id = ? ORDER BY timestamp DESC',
-      [guestId]
-    );
+    const query = `
+      SELECT id, guest_id, type, details, status, timestamp 
+      FROM bookings WHERE guest_id = $1 ORDER BY timestamp DESC
+    `;
+    const bookings = await db.all(query, [guestId]);
     
     // If no bookings, return an empty array
     return bookings || [];
@@ -232,14 +245,11 @@ async function updateBookingStatus(bookingId, status) {
       throw new Error('Invalid status. Must be "pending", "confirmed", or "cancelled"');
     }
     
-    // Update the booking status
-    const result = await db.run(
-      'UPDATE bookings SET status = ? WHERE id = ?',
-      [status, bookingId]
-    );
+    const query = 'UPDATE bookings SET status = $1 WHERE id = $2';
+    const result = await db.run(query, [status, bookingId]);
     
     // Return true if a row was updated
-    return result.changes > 0;
+    return result > 0;
   } catch (err) {
     console.error('Error updating booking status:', err.message);
     throw new Error('Failed to update booking status: ' + err.message);
@@ -254,14 +264,11 @@ async function updateBookingStatus(bookingId, status) {
  */
 async function deleteBooking(bookingId, guestId) {
   try {
-    // Delete the booking, but only if it belongs to the specified guest
-    const result = await db.run(
-      'DELETE FROM bookings WHERE id = ? AND guest_id = ?',
-      [bookingId, guestId]
-    );
+    const query = 'DELETE FROM bookings WHERE id = $1 AND guest_id = $2';
+    const result = await db.run(query, [bookingId, guestId]);
     
     // Return true if a row was deleted
-    return result.changes > 0;
+    return result > 0;
   } catch (err) {
     console.error('Error deleting booking:', err.message);
     throw new Error('Failed to delete booking: ' + err.message);
@@ -280,38 +287,42 @@ async function deleteBooking(bookingId, guestId) {
 const preventBookingOverlaps = async (booking, type, name, date, time) => {
   try {
     // Begin a transaction for atomicity
-    return await db.transaction(async (trx) => {
+    return await db.transaction(async (client) => {
       // Double-check the availability within the transaction
-      const query = `
+      const checkQuery = `
         SELECT COUNT(*) as count
         FROM bookings
-        WHERE type = ?
+        WHERE type = $1
         AND status != 'cancelled'
-        AND json_extract(details, '$.name') = ?
-        AND date(json_extract(details, '$.time')) = ?
-        AND time(json_extract(details, '$.time')) = ?
+        AND jsonb_path_query_first(details::jsonb, '$.name') = to_jsonb($2::text)
+        AND date(jsonb_path_query_first(details::jsonb, '$.time')::text::timestamptz) = $3::date
+        AND to_char(jsonb_path_query_first(details::jsonb, '$.time')::text::timestamptz, 'HH24:MI') = $4
       `;
       
-      const params = [type, name, date, `${time}:00`];
-      const result = await trx.get(query, params);
+      const params = [type, name, date, time];
+      const result = await client.query(checkQuery, params);
+      const count = parseInt(result.rows[0].count, 10);
       
       // If any bookings exist for this slot, it's no longer available
-      if (result.count > 0) {
+      if (count > 0) {
         throw new Error('This time slot is no longer available. Please choose another time.');
       }
       
       // If we get here, the slot is available, so save the booking
       const insertQuery = `
         INSERT INTO bookings (guest_id, type, details, status, timestamp)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3::jsonb, $4, NOW()) RETURNING id
       `;
       
-      const { guest_id, details, status = 'pending', timestamp = new Date().toISOString() } = booking;
+      const { guest_id, details, status = 'pending' } = booking;
       
-      const insertResult = await trx.run(insertQuery, [guest_id, type, details, status, timestamp]);
+      const insertResult = await client.query(insertQuery, [guest_id, type, details, status]);
       
       // Return the ID of the newly created booking
-      return insertResult.lastID;
+      if (insertResult.rows.length === 0) {
+        throw new Error('Booking insert did not return an ID within transaction.');
+      }
+      return insertResult.rows[0].id;
     });
   } catch (error) {
     console.error('Error preventing booking overlap:', error);
