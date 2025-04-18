@@ -1,264 +1,206 @@
 /**
  * Database connection module for Inn Touch
- * Handles SQLite database connection and initialization
+ * Handles PostgreSQL database connection and initialization using pg.Pool
  */
 
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
-const fs = require('fs');
+const { Pool } = require('pg');
 const schema = require('./schema');
 
-// Database file path
-const dbPath = process.env.DB_PATH || path.join(__dirname, '../../', 'hospitality.db');
-
-// Ensure database directory exists
-const dbDir = path.dirname(dbPath);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
-}
-
-// Global database connection
-let dbInstance = null;
+// Global database connection pool
+let pool = null;
 
 /**
- * Create a new database connection
- * @returns {sqlite3.Database} The database connection
+ * Create a new database connection pool
+ * Uses DATABASE_URL environment variable for connection string
+ * Configures SSL for Heroku compatibility
+ * @returns {pg.Pool} The database connection pool
  */
-function createConnection() {
-  if (dbInstance) {
-    return dbInstance;
+function createPool() {
+  if (pool) {
+    return pool;
   }
-  
-  dbInstance = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-      console.error('Error connecting to SQLite database:', err.message);
-      throw err;
+
+  if (!process.env.DATABASE_URL) {
+    console.error('Error: DATABASE_URL environment variable is not set.');
+    console.log('Ensure you have a PostgreSQL database (e.g., Heroku Postgres) and DATABASE_URL is configured.');
+    throw new Error('DATABASE_URL environment variable is missing.');
+  }
+
+  // Configuration for Heroku Postgres (requires SSL)
+  // For local development without SSL, you might need to adjust this or set DATABASE_URL accordingly
+  const isProduction = process.env.NODE_ENV === 'production';
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: isProduction ? { rejectUnauthorized: false } : false, // Required for Heroku Postgres
+  });
+
+  pool.on('connect', () => {
+    console.log('Connected to the PostgreSQL database via pool.');
+  });
+
+  pool.on('error', (err, client) => {
+    console.error('Unexpected error on idle PostgreSQL client', err);
+    // Optionally, try to reconnect or handle the error
+    // For simplicity, we'll just log it here
+  });
+
+  return pool;
+}
+
+/**
+ * Get a database connection pool
+ * Creates a new pool if one doesn't exist
+ * @returns {pg.Pool} The database connection pool
+ */
+function getPool() {
+  return pool || createPool();
+}
+
+/**
+ * Execute a SQL query with optional parameters using the pool
+ * Handles acquiring and releasing a client from the pool
+ * @param {string} sql - The SQL query to run (use $1, $2... for parameters)
+ * @param {Array} params - The parameters to use in the query
+ * @returns {Promise<QueryResult>} A promise that resolves with the query result (rows, rowCount, etc.)
+ */
+async function query(sql, params = []) {
+  const pool = getPool();
+  let client = null; // Declare client outside try block
+  try {
+    client = await pool.connect();
+    const result = await client.query(sql, params);
+    return result;
+  } catch (err) {
+    console.error('Error executing SQL:', sql);
+    console.error('Parameters:', params);
+    console.error('Error details:', err.message);
+    throw err; // Re-throw the error to be caught by the caller
+  } finally {
+    if (client) {
+        client.release(); // Ensure client is always released
     }
-    console.log('Connected to the SQLite database:', dbPath);
-  });
-  
-  // Enable foreign keys
-  dbInstance.run('PRAGMA foreign_keys = ON');
-  
-  return dbInstance;
+  }
 }
 
 /**
- * Get a database connection
- * Creates a new connection if one doesn't exist
- * @returns {sqlite3.Database} The database connection
+ * Convenience function to run a SQL statement (INSERT, UPDATE, DELETE)
+ * Returns the number of affected rows
+ * @param {string} sql
+ * @param {Array} params
+ * @returns {Promise<number>} Number of rows affected
  */
-function getConnection() {
-  return dbInstance || createConnection();
+async function run(sql, params = []) {
+  const result = await query(sql, params);
+  return result.rowCount;
 }
 
 /**
- * Run a SQL query with optional parameters
- * @param {string} sql - The SQL query to run
- * @param {Array} params - The parameters to use in the query
- * @returns {Promise} A promise that resolves with the result
+ * Convenience function to get a single row
+ * @param {string} sql
+ * @param {Array} params
+ * @returns {Promise<object | undefined>} The first row found or undefined
  */
-function run(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    const db = getConnection();
-    db.run(sql, params, function(err) {
-      if (err) {
-        console.error('Error running SQL:', sql);
-        console.error('Error details:', err.message);
-        reject(err);
-        return;
-      }
-      resolve({ lastID: this.lastID, changes: this.changes });
-    });
-  });
+async function get(sql, params = []) {
+  const result = await query(sql, params);
+  return result.rows[0];
 }
 
 /**
- * Get a single row from a SQL query
- * @param {string} sql - The SQL query to run
- * @param {Array} params - The parameters to use in the query
- * @returns {Promise} A promise that resolves with the row
+ * Convenience function to get all rows
+ * @param {string} sql
+ * @param {Array} params
+ * @returns {Promise<Array<object>>} An array of rows
  */
-function get(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    const db = getConnection();
-    db.get(sql, params, (err, row) => {
-      if (err) {
-        console.error('Error executing SQL:', sql);
-        console.error('Error details:', err.message);
-        reject(err);
-        return;
-      }
-      resolve(row);
-    });
-  });
-}
-
-/**
- * Get all rows from a SQL query
- * @param {string} sql - The SQL query to run
- * @param {Array} params - The parameters to use in the query
- * @returns {Promise} A promise that resolves with the rows
- */
-function all(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    const db = getConnection();
-    db.all(sql, params, (err, rows) => {
-      if (err) {
-        console.error('Error executing SQL:', sql);
-        console.error('Error details:', err.message);
-        reject(err);
-        return;
-      }
-      resolve(rows);
-    });
-  });
+async function all(sql, params = []) {
+  const result = await query(sql, params);
+  return result.rows;
 }
 
 /**
  * Initialize the database
  * Creates tables if they don't exist using the defined schema
- * @returns {Promise} A promise that resolves when the database is initialized
+ * @returns {Promise<boolean>} A promise that resolves with true when the database is initialized
  */
 async function initDatabase() {
-  console.log('Initializing database...');
-  
+  console.log('Initializing PostgreSQL database schema...');
+  const pool = getPool();
+  let client = null; 
+
   try {
-    // Get connection and enable foreign keys
-    const db = getConnection();
-    
-    // Execute each schema statement in sequence
+    client = await pool.connect();
+    console.log('Executing schema statements...');
+    // Execute each schema statement sequentially within a transaction
+    await client.query('BEGIN');
     for (const statement of schema) {
-      await new Promise((resolve, reject) => {
-        db.run(statement, (err) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve();
-        });
-      });
+      console.log(`Executing: ${statement.substring(0, 100)}...`); // Log snippet
+      await client.query(statement);
     }
-    
+    await client.query('COMMIT');
     console.log('Database schema initialized successfully');
     return true;
   } catch (err) {
     console.error('Error initializing database schema:', err.message);
-    throw err;
+    if (client) {
+      try {
+        await client.query('ROLLBACK');
+        console.log('Transaction rolled back due to error.');
+      } catch (rollbackErr) {
+        console.error('Error rolling back transaction:', rollbackErr.message);
+      }
+    }
+    throw err; // Re-throw the error to be handled by the main server start logic
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 }
 
 /**
- * Close the database connection
- * @returns {Promise} A promise that resolves when the connection is closed
+ * Close the database connection pool
+ * @returns {Promise} A promise that resolves when the pool is closed
  */
-function closeDatabase() {
-  return new Promise((resolve, reject) => {
-    if (dbInstance) {
-      dbInstance.close(err => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        dbInstance = null;
-        resolve();
-      });
-    } else {
-      resolve();
-    }
-  });
+async function closeDatabase() {
+  if (pool) {
+    console.log('Closing PostgreSQL connection pool...');
+    await pool.end();
+    pool = null;
+    console.log('PostgreSQL connection pool closed.');
+  }
 }
 
 /**
  * Run a transaction with the provided callback
- * @param {Function} callback - The callback function that receives a transaction object
+ * Provides a client object to the callback for running queries within the transaction
+ * Automatically handles BEGIN, COMMIT, and ROLLBACK
+ * @param {Function} callback - Async function receiving the transaction client: async (client) => { ... }
  * @returns {Promise} A promise that resolves with the result of the callback
  */
-function transaction(callback) {
-  return new Promise((resolve, reject) => {
-    const db = getConnection();
-    
-    // Start a transaction
-    db.run('BEGIN TRANSACTION', async (err) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      
-      try {
-        // Create transaction wrapper object with customized run, get, all methods
-        // that use the same db connection
-        const trx = {
-          run: (sql, params = []) => {
-            return new Promise((resolve, reject) => {
-              db.run(sql, params, function(err) {
-                if (err) {
-                  reject(err);
-                  return;
-                }
-                resolve({ lastID: this.lastID, changes: this.changes });
-              });
-            });
-          },
-          get: (sql, params = []) => {
-            return new Promise((resolve, reject) => {
-              db.get(sql, params, (err, row) => {
-                if (err) {
-                  reject(err);
-                  return;
-                }
-                resolve(row);
-              });
-            });
-          },
-          all: (sql, params = []) => {
-            return new Promise((resolve, reject) => {
-              db.all(sql, params, (err, rows) => {
-                if (err) {
-                  reject(err);
-                  return;
-                }
-                resolve(rows);
-              });
-            });
-          }
-        };
-        
-        // Call the callback with the transaction object
-        const result = await callback(trx);
-        
-        // Commit the transaction
-        db.run('COMMIT', (err) => {
-          if (err) {
-            // Try to rollback on commit error
-            db.run('ROLLBACK', () => reject(err));
-            return;
-          }
-          
-          // Resolve with the result
-          resolve(result);
-        });
-      } catch (err) {
-        // Rollback the transaction on error
-        db.run('ROLLBACK', (rollbackErr) => {
-          // If there was an error rolling back, log it
-          if (rollbackErr) {
-            console.error('Error rolling back transaction:', rollbackErr.message);
-          }
-          
-          // Always reject with the original error
-          reject(err);
-        });
-      }
-    });
-  });
+async function transaction(callback) {
+  const pool = getPool();
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    // Provide the client to the callback. The callback should use client.query
+    const result = await callback(client); 
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Transaction failed, rolled back.', err.message);
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 module.exports = {
+  getPool,
+  query, // Export the base query function
+  run,   // Export convenience function
+  get,   // Export convenience function
+  all,   // Export convenience function
   initDatabase,
   closeDatabase,
-  run,
-  get,
-  all,
   transaction
 }; 
