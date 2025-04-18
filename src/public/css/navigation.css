@@ -1,0 +1,96 @@
+/* Mobile Navigation Enhancement */
+
+/* Reset navigation styles to avoid conflicts */
+.nav {
+    position: relative !important;
+    min-height: 50px !important;
+}
+
+/* Hamburger button styles */
+.menu-toggle {
+    /* Default state - hidden on desktop */
+    display: none;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 40px;
+    height: 40px;
+    position: absolute;
+    top: -10px;
+    right: 10px;
+    cursor: pointer;
+    z-index: 2000;
+    /* Add visible background and padding */
+    background-color: rgba(255, 255, 255, 0.151);
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.menu-toggle span {
+    display: block;
+    height: 5px;
+    width: 100%;
+    background-color: white;
+    border-radius: 2px;
+    transition: transform 0.3s, opacity 0.3s;
+    /* Add shadow for better visibility */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* Hamburger animation when active */
+.menu-toggle.active span:nth-child(1) {
+    transform: translateY(13px) rotate(45deg);
+}
+
+.menu-toggle.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.menu-toggle.active span:nth-child(3) {
+    transform: translateY(-13px) rotate(-45deg);
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+    /* Show hamburger on mobile */
+    .menu-toggle {
+        display: flex !important;
+    }
+    
+    /* Mobile navigation layout */
+    .nav-links {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        padding-top: 40px;
+        /* Animation setup */
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(-20px);
+        transition: max-height 0.5s ease, opacity 0.4s ease, transform 0.4s ease;
+    }
+    
+    .nav-links.active {
+        max-height: 500px;
+        opacity: 1;
+        transform: translateY(0);
+        transition: max-height 0.5s ease, opacity 0.4s ease, transform 0.4s ease;
+    }
+    
+    .nav a {
+        width: 100%;
+        margin: 0;
+        border-radius: 0 !important;
+        /* Staggered animation for links */
+        opacity: 0;
+        transform: translateX(-10px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        transition-delay: calc(0.05s * var(--item-index, 0));
+    }
+    
+    .nav-links.active a {
+        opacity: 1;
+        transform: translateX(0);
+    }
+} 

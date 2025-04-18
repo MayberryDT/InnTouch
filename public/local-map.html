@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inn Touch - Local Map</title>
+    <!-- Google Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Playfair+Display:wght@700&display=swap">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+    crossorigin=""/>
+    <!-- Styles -->
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/navigation.css">
+    <style>
+        /* Override base styles to match frontend guidelines */
+        .container h1, .container h2 {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            color: #1E40AF;
+        }
+        
+        .container h1 {
+            font-size: 2.25rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .container h2 {
+            font-size: 1.5rem;
+            margin-top: 3rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .container p {
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 2rem;
+            color: #111827;
+        }
+        
+        /* Map container styles */
+        #map-container {
+            position: relative;
+            height: 70vh;
+            width: 100%;
+            margin-bottom: 2rem;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        
+        /* Map overlay styles */
+        .map-overlay {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            background-color: #FFFFFF;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .map-overlay:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        /* Category filter styles */
+        .map-category {
+            margin-bottom: 0.5rem;
+        }
+        
+        .map-category label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            color: #111827;
+        }
+        
+        .map-category input {
+            margin-right: 0.5rem;
+            width: auto;
+            accent-color: #3B82F6;
+        }
+        
+        /* Location list styles */
+        .location-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        @media (min-width: 768px) {
+            .location-list {
+                grid-template-columns: 1fr 1fr;
+                gap: 2rem;
+            }
+        }
+        
+        /* Location card styles */
+        .location-card {
+            display: flex;
+            align-items: center;
+            padding: 1.25rem;
+            border-radius: 0.5rem;
+            background-color: #FFFFFF;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        .location-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .location-card.active {
+            border-left: 4px solid #1E40AF;
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .location-icon {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            background: linear-gradient(to bottom right, #60A5FA, #3B82F6);
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            flex-shrink: 0;
+            font-size: 1.25rem;
+        }
+        
+        .location-details {
+            flex-grow: 1;
+        }
+        
+        .location-name {
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            font-size: 1.125rem;
+            margin-bottom: 0.5rem;
+            color: #111827;
+        }
+        
+        .location-info {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            color: #6B7280;
+        }
+        
+        /* Error state styles */
+        .map-error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-width: 90%;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Leaflet popup customization */
+        .leaflet-popup-content-wrapper {
+            border-radius: 0.5rem;
+            padding: 0.25rem;
+        }
+        
+        .leaflet-popup-content {
+            font-family: 'Inter', sans-serif;
+            margin: 0.75rem;
+        }
+        
+        .leaflet-popup-content b {
+            font-weight: 500;
+            color: #1E40AF;
+        }
+        
+        /* Animation definitions */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Custom button styling for this page only */
+        .map-btn {
+            display: inline-block;
+            background: linear-gradient(to bottom right, #60A5FA, #3B82F6);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-top: 1rem;
+        }
+        
+        .map-btn:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .map-btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* Toast notification styles */
+        .toast {
+            position: fixed;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .toast-success { 
+            background-color: #10B981; 
+        }
+        
+        .toast-error { 
+            background-color: #EF4444; 
+        }
+        
+        .toast-info { 
+            background-color: #3B82F6; 
+        }
+        
+        @keyframes slideInUp {
+            from { transform: translate(-50%, 100%); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        
+        /* Loading spinner styles */
+        .loading-spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 1000;
+            font-family: 'Inter', sans-serif;
+            color: #1E40AF;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 1rem;
+            border: 3px solid rgba(59, 130, 246, 0.3);
+            border-radius: 50%;
+            border-top-color: #3B82F6;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <div class="menu-toggle" id="menu-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="nav-links" id="nav-links">
+            <a href="/"><i class="fas fa-home"></i> Home</a>
+            <a href="/chat.html"><i class="fas fa-message"></i> Chat</a>
+            <a href="/room-service.html"><i class="fas fa-utensils"></i> Room Service</a>
+            <a href="/booking.html"><i class="fas fa-calendar"></i> Bookings</a>
+            <a href="/property-info.html"><i class="fas fa-circle-info"></i> Property Info</a>
+            <a href="/local-map.html" class="active"><i class="fas fa-map-pin"></i> Local Map</a>
+            <a href="/feedback.html"><i class="fas fa-star"></i> Feedback</a>
+            <a href="#" id="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h1>Local Map</h1>
+        <p>Discover recommended places near our hotel. Click on markers to see more details about restaurants, shops, and attractions in the area.</p>
+        
+        <div id="map-container">
+            <div id="map"></div>
+            <div class="map-overlay">
+                <div class="map-category">
+                    <label><input type="checkbox" checked data-category="restaurant"> Restaurants</label>
+                    <label><input type="checkbox" checked data-category="shopping"> Shopping</label>
+                    <label><input type="checkbox" checked data-category="attraction"> Attractions</label>
+                </div>
+            </div>
+        </div>
+        
+        <h2>Our Recommendations</h2>
+        <div class="location-list">
+            <!-- Locations will be dynamically populated by JavaScript -->
+        </div>
+    </div>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
+    crossorigin=""></script>
+    
+    <!-- Authentication check script - must be first -->
+    <script src="/js/auth.js"></script>
+    <!-- Leaflet map script -->
+    <script src="/js/local-map.js"></script>
+    <!-- Navigation script for mobile menu -->
+    <script src="/js/navigation.js"></script>
+</body>
+</html> 

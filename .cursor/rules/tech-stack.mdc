@@ -1,0 +1,34 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Tech Stack
+
+---
+
+## Frontend
+
+- Use plain HTML5 for page structure.
+- Use CSS3 for styling, no preprocessors.
+- Use vanilla JavaScript for interactivity, no frameworks.
+- Use Leaflet for the Local Map feature, version 1.9.4, from https://leafletjs.com/.
+
+---
+
+## Backend
+
+- Use Node.js with Express for the server.
+- Use SQLite for the database, stored in `hospitality.db`.
+- Use `express` for routing and API handling.
+- Use `sqlite3` to connect to SQLite.
+- Use `ws` for WebSocket chat.
+- Use `node-fetch` to call the Cloudbeds API.
+- Use `dotenv` for environment variables like API keys.
+
+---
+
+## APIs
+
+- Use Cloudbeds API for guest data, from https://hotels.cloudbeds.com/api/docs/.
+- Use OpenStreetMap with Leaflet for maps, from https://wiki.openstreetmap.org/.

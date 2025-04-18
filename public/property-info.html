@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inn Touch - Property Information</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Playfair+Display:wght@700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/navigation.css">
+    <style>
+        body {
+            font-family: 'Inter', 'Roboto', sans-serif;
+        }
+
+        h1, h2 {
+            font-family: 'Playfair Display', serif;
+            color: var(--primary-blue);
+        }
+
+        .property-header {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .property-header h1 {
+            font-size: 2.25rem;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .property-header p {
+            color: var(--text-dark);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .info-section {
+            margin-bottom: var(--spacing-lg);
+            background-color: var(--bg-white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+
+        .info-section:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .section-header {
+            padding: var(--spacing-md) var(--spacing-lg);
+            background: linear-gradient(to right, var(--primary-blue), #1e3a8a);
+            color: var(--text-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .section-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: var(--text-light);
+        }
+
+        .section-content {
+            padding: var(--spacing-lg);
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: max-height 0.5s ease-in-out, opacity 0.3s ease-in-out, padding 0.3s;
+        }
+
+        .section-content.active {
+            display: block;
+            max-height: 2000px;
+            opacity: 1;
+            padding: var(--spacing-lg);
+        }
+
+        .section-content p {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .amenity-list, .policy-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .amenity-list li, .policy-list li {
+            margin-bottom: var(--spacing-sm);
+            padding-left: var(--spacing-lg);
+            position: relative;
+        }
+
+        .amenity-list li:before {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            color: var(--primary-blue);
+            position: absolute;
+            left: 0;
+        }
+
+        .policy-list li:before {
+            content: '\f05a';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            color: var(--primary-blue);
+            position: absolute;
+            left: 0;
+        }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--spacing-lg);
+        }
+
+        .contact-card {
+            background-color: var(--bg-light);
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: flex-start;
+            word-break: break-word;
+            height: 100%;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .contact-card i {
+            font-size: 1.5rem;
+            color: var(--primary-blue);
+            margin-right: var(--spacing-md);
+        }
+
+        .contact-card div {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .toggle-icon {
+            transition: transform 0.3s;
+        }
+
+        .section-header.active .toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .info-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .hours-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .hours-table th, .hours-table td {
+            padding: var(--spacing-sm);
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .hours-table th {
+            font-weight: 500;
+            color: var(--primary-blue);
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <div class="menu-toggle" id="menu-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="nav-links" id="nav-links">
+            <a href="/"><i class="fas fa-home"></i> Home</a>
+            <a href="/chat.html"><i class="fas fa-message"></i> Chat</a>
+            <a href="/room-service.html"><i class="fas fa-utensils"></i> Room Service</a>
+            <a href="/booking.html"><i class="fas fa-calendar"></i> Bookings</a>
+            <a href="/property-info.html" class="active"><i class="fas fa-circle-info"></i> Property Info</a>
+            <a href="/local-map.html"><i class="fas fa-map-pin"></i> Local Map</a>
+            <a href="/feedback.html"><i class="fas fa-star"></i> Feedback</a>
+            <a href="#" id="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="property-header">
+            <h1>Welcome to Our Inn</h1>
+            <p>Discover the perfect blend of comfort, luxury, and personalized service. 
+               Our property is designed to make your stay both relaxing and memorable.</p>
+        </div>
+
+        <!-- Amenities Section -->
+        <div class="info-section">
+            <div class="section-header">
+                <h2><i class="fas fa-spa"></i> Property Amenities</h2>
+                <i class="fas fa-chevron-down toggle-icon"></i>
+            </div>
+            <div class="section-content">
+                <p>Our hotel offers a variety of amenities to enhance your stay and ensure your comfort:</p>
+                <ul class="amenity-list">
+                    <li>Spa - Indulge in relaxing treatments and massages</li>
+                    <li>Fitness Center - Stay active with our state-of-the-art equipment</li>
+                    <li>Swimming Pool - Enjoy our heated indoor pool and jacuzzi</li>
+                    <li>Restaurant & Bar - Savor delicious meals and craft cocktails</li>
+                    <li>Business Center - Access computers, printers, and high-speed internet</li>
+                    <li>Concierge Service - Available 24/7 to assist with all your needs</li>
+                    <li>Complimentary Wi-Fi - High-speed internet throughout the property</li>
+                    <li>Conference Rooms - Versatile spaces for meetings and events</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Policies Section -->
+        <div class="info-section">
+            <div class="section-header">
+                <h2><i class="fas fa-scroll"></i> Policies & Guidelines</h2>
+                <i class="fas fa-chevron-down toggle-icon"></i>
+            </div>
+            <div class="section-content">
+                <p>Please familiarize yourself with our policies to ensure a pleasant stay for all guests:</p>
+                <ul class="policy-list">
+                    <li><strong>Non-Smoking Policy:</strong> Our property is 100% smoke-free. A cleaning fee of $250 will be charged for smoking in non-designated areas.</li>
+                    <li><strong>Pet Policy:</strong> We welcome well-behaved pets under 30 pounds with a one-time fee of $75 per stay.</li>
+                    <li><strong>Cancellation Policy:</strong> Cancellations must be made 48 hours prior to arrival to avoid a one-night charge.</li>
+                    <li><strong>Quiet Hours:</strong> 10:00 PM to 7:00 AM to ensure all guests can enjoy a peaceful rest.</li>
+                    <li><strong>Extra Person Fee:</strong> $25 per person, per night for guests beyond double occupancy.</li>
+                    <li><strong>Parking:</strong> Valet parking is available for $30 per night with in-and-out privileges.</li>
+                    <li><strong>Lost Key Cards:</strong> A $20 fee will be charged for lost key cards.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Check-in/Check-out Section -->
+        <div class="info-section">
+            <div class="section-header">
+                <h2><i class="fas fa-clock"></i> Hours & Timings</h2>
+                <i class="fas fa-chevron-down toggle-icon"></i>
+            </div>
+            <div class="section-content">
+                <h3>Check-in & Check-out</h3>
+                <ul class="policy-list">
+                    <li><strong>Check-in Time:</strong> 3:00 PM</li>
+                    <li><strong>Check-out Time:</strong> 11:00 AM</li>
+                    <li><strong>Early Check-in:</strong> Available based on occupancy (fees may apply)</li>
+                    <li><strong>Late Check-out:</strong> Available until 2:00 PM (50% of daily rate applies)</li>
+                </ul>
+                
+                <h3>Facility Hours</h3>
+                <table class="hours-table">
+                    <tr>
+                        <th>Facility</th>
+                        <th>Opening Hours</th>
+                    </tr>
+                    <tr>
+                        <td>Fitness Center</td>
+                        <td>6:00 AM - 10:00 PM (Daily)</td>
+                    </tr>
+                    <tr>
+                        <td>Swimming Pool</td>
+                        <td>7:00 AM - 9:00 PM (Daily)</td>
+                    </tr>
+                    <tr>
+                        <td>Spa</td>
+                        <td>9:00 AM - 8:00 PM (Daily)</td>
+                    </tr>
+                    <tr>
+                        <td>Restaurant</td>
+                        <td>6:30 AM - 10:30 PM (Daily)</td>
+                    </tr>
+                    <tr>
+                        <td>Bar & Lounge</td>
+                        <td>12:00 PM - 12:00 AM (Daily)</td>
+                    </tr>
+                    <tr>
+                        <td>Business Center</td>
+                        <td>24 Hours (Access with room key)</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Contact Section -->
+        <div class="info-section">
+            <div class="section-header">
+                <h2><i class="fas fa-address-book"></i> Contact Information</h2>
+                <i class="fas fa-chevron-down toggle-icon"></i>
+            </div>
+            <div class="section-content">
+                <p>Our friendly staff is available to assist you 24/7. Here's how you can reach us:</p>
+                
+                <div class="contact-grid">
+                    <div class="contact-card">
+                        <i class="fas fa-phone"></i>
+                        <div>
+                            <strong>Front Desk</strong><br>
+                            Dial 0 from your room phone<br>
+                            +1 (555) 123-4567
+                        </div>
+                    </div>
+                    
+                    <div class="contact-card">
+                        <i class="fas fa-utensils"></i>
+                        <div>
+                            <strong>Room Service</strong><br>
+                            Dial 1 from your room phone<br>
+                            Available 6:30 AM - 10:30 PM
+                        </div>
+                    </div>
+                    
+                    <div class="contact-card">
+                        <i class="fas fa-concierge-bell"></i>
+                        <div>
+                            <strong>Concierge</strong><br>
+                            Dial 2 from your room phone<br>
+                            +1 (555) 123-4570
+                        </div>
+                    </div>
+                    
+                    <div class="contact-card">
+                        <i class="fas fa-envelope"></i>
+                        <div>
+                            <strong>Email</strong><br>
+                            info@inntouch.example.com<br>
+                            concierge@inntouch.example.com
+                        </div>
+                    </div>
+
+                    <div class="contact-card">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div>
+                            <strong>Address</strong><br>
+                            123 Hospitality Avenue<br>
+                            Beachside, CA 94123
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- Authentication check script - must be first -->
+    <script src="/js/auth.js"></script>
+    <!-- Navigation script for mobile menu -->
+    <script src="/js/navigation.js"></script>
+    <!-- Property Info script for accordions -->
+    <script src="/js/property-info.js"></script>
+</body>
+</html> 

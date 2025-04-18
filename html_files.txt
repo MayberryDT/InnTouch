@@ -1,0 +1,15 @@
+booking.html
+chat-test.html
+chat.html
+feedback.html
+guest-login.html
+index.html
+local-map.html
+login.html
+property-info.html
+room-service.html
+staff-chat.html
+staff-dashboard.html
+staff-login.html
+test-menu.html
+test.html

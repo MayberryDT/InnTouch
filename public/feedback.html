@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inn Touch - Feedback</title>
+    <!-- Google Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Playfair+Display:wght@700&display=swap">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/navigation.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #111827;
+            background-color: #F9FAFB;
+        }
+        
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            font-size: 2.25rem;
+            color: #1E40AF;
+            margin-bottom: 1rem;
+        }
+        
+        p {
+            font-size: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .star-rating {
+            display: flex;
+            margin-bottom: 1.5rem;
+            flex-direction: row-reverse;
+            justify-content: flex-end;
+        }
+        
+        .star-rating input {
+            display: none;
+        }
+        
+        .star-rating label {
+            cursor: pointer;
+            font-size: 2rem;
+            color: #ddd;
+            margin: 0 0.25rem;
+            transition: all 0.3s ease;
+        }
+        
+        .star-rating label:hover,
+        .star-rating label:hover ~ label,
+        .star-rating input:checked ~ label {
+            color: #3B82F6;
+            transform: scale(1.1);
+        }
+        
+        .star-rating label.hover {
+            animation: pulse 0.5s ease;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        
+        .confirmation-message {
+            display: none;
+            padding: 1.25rem;
+            color: #FFFFFF;
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .confirmation-message.success {
+            background-color: #10B981;
+        }
+        
+        .confirmation-message.error {
+            background-color: #EF4444;
+        }
+        
+        .confirmation-message.show {
+            opacity: 1;
+            animation: slideIn 0.5s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .feedback-help {
+            font-size: 0.9rem;
+            color: #4B5563;
+            margin-bottom: 0.75rem;
+        }
+        
+        .feedback-card {
+            max-width: 600px;
+            margin: 0 auto;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .feedback-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            font-size: 1.125rem;
+        }
+        
+        textarea {
+            border: 1px solid #D1D5DB;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+        }
+        
+        .checkbox-option {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .checkbox-option input[type="checkbox"] {
+            width: auto;
+            margin-right: 0.5rem;
+            margin-bottom: 0;
+        }
+        
+        .btn {
+            background: linear-gradient(to right, #60A5FA, #3B82F6);
+            color: #FFFFFF;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            font-size: 1.125rem;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(to right, #3B82F6, #2563EB);
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+            transition: transform 0.1s ease;
+        }
+        
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <div class="menu-toggle" id="menu-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="nav-links" id="nav-links">
+            <a href="/"><i class="fas fa-home"></i> Home</a>
+            <a href="/chat.html"><i class="fas fa-message"></i> Chat</a>
+            <a href="/room-service.html"><i class="fas fa-utensils"></i> Room Service</a>
+            <a href="/booking.html"><i class="fas fa-calendar"></i> Bookings</a>
+            <a href="/property-info.html"><i class="fas fa-circle-info"></i> Property Info</a>
+            <a href="/local-map.html"><i class="fas fa-map-pin"></i> Local Map</a>
+            <a href="/feedback.html" class="active"><i class="fas fa-star"></i> Feedback</a>
+            <a href="#" id="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h1>Share Your Experience</h1>
+        <p>We value your feedback! Please take a moment to let us know about your stay so we can continue to improve.</p>
+        
+        <div id="confirmation" class="confirmation-message">
+            Thank you for your feedback! We appreciate you taking the time to share your experience.
+        </div>
+        
+        <div class="card feedback-card">
+            <form id="feedback-form">
+                <div class="form-group">
+                    <label for="rating">How would you rate your stay so far?</label>
+                    <div class="star-rating">
+                        <input type="radio" id="star5" name="rating" value="5" required />
+                        <label for="star5" title="5 stars"><i class="fas fa-star"></i></label>
+                        
+                        <input type="radio" id="star4" name="rating" value="4" />
+                        <label for="star4" title="4 stars"><i class="fas fa-star"></i></label>
+                        
+                        <input type="radio" id="star3" name="rating" value="3" />
+                        <label for="star3" title="3 stars"><i class="fas fa-star"></i></label>
+                        
+                        <input type="radio" id="star2" name="rating" value="2" />
+                        <label for="star2" title="2 stars"><i class="fas fa-star"></i></label>
+                        
+                        <input type="radio" id="star1" name="rating" value="1" />
+                        <label for="star1" title="1 star"><i class="fas fa-star"></i></label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="comments">Comments</label>
+                    <p class="feedback-help">Please share any feedback about your experience, including what we're doing well and where we could improve.</p>
+                    <textarea id="comments" name="comments" rows="6" placeholder="Tell us about your experience..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>What aspects of your stay did you enjoy most?</label>
+                    <div class="checkbox-option">
+                        <input type="checkbox" id="room" name="aspects" value="room">
+                        <label for="room" style="display: inline; font-weight: 400; font-size: 1rem;">Room comfort</label>
+                    </div>
+                    <div class="checkbox-option">
+                        <input type="checkbox" id="service" name="aspects" value="service">
+                        <label for="service" style="display: inline; font-weight: 400; font-size: 1rem;">Staff service</label>
+                    </div>
+                    <div class="checkbox-option">
+                        <input type="checkbox" id="dining" name="aspects" value="dining">
+                        <label for="dining" style="display: inline; font-weight: 400; font-size: 1rem;">Dining experience</label>
+                    </div>
+                    <div class="checkbox-option">
+                        <input type="checkbox" id="amenities" name="aspects" value="amenities">
+                        <label for="amenities" style="display: inline; font-weight: 400; font-size: 1rem;">Hotel amenities</label>
+                    </div>
+                    <div class="checkbox-option">
+                        <input type="checkbox" id="location" name="aspects" value="location">
+                        <label for="location" style="display: inline; font-weight: 400; font-size: 1rem;">Location</label>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn">Submit Feedback</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Authentication check script - must be first -->
+    <script src="/js/auth.js"></script>
+    <!-- Feedback functionality -->
+    <script src="/js/feedback.js"></script>
+    <!-- Navigation script for mobile menu -->
+    <script src="/js/navigation.js"></script>
+</body>
+</html> 

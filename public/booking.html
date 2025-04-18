@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inn Touch - Bookings</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/navigation.css">
+    <style>
+        .confirmation {
+            background-color: #10B981;
+            color: white;
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            display: none;
+            text-align: center;
+            animation: fadeInDown 0.5s;
+        }
+
+        .booking-tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .booking-tab {
+            padding: var(--spacing-md);
+            cursor: pointer;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .booking-tab.active {
+            border-bottom: 3px solid var(--primary-blue);
+            color: var(--primary-blue);
+        }
+
+        .booking-content {
+            display: none;
+        }
+
+        .booking-content.active {
+            display: block;
+        }
+
+        .booking-item {
+            background-color: var(--bg-white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+            transition: transform 0.3s;
+        }
+
+        .booking-item:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .booking-item-image {
+            width: 200px; /* Match new image width */
+            height: 160px; /* Match new image height */
+            margin-right: var(--spacing-lg);
+            flex-shrink: 0;
+            overflow: hidden;
+            border-radius: var(--border-radius-sm);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Add subtle shadow from guidelines */
+            border: 1px solid #eee; /* Add a light border */
+        }
+
+        .booking-item-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .booking-item-layout {
+            display: flex;
+            align-items: center; /* Center vertically on desktop */
+        }
+
+        .booking-item-content-wrapper {
+            flex-grow: 1; /* Takes remaining space */
+        }
+
+        .booking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .booking-title {
+            margin: 0;
+            color: var(--primary-blue);
+        }
+
+        .booking-price {
+            background-color: var(--primary-blue);
+            color: white;
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--border-radius);
+            font-weight: 500;
+        }
+
+        .booking-details {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .booking-time {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-xs);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .time-slot {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .time-slot:hover, .time-slot.selected {
+            background-color: var(--primary-blue);
+            color: white;
+            border-color: var(--primary-blue);
+        }
+
+        .booking-form {
+            margin-top: var(--spacing-lg);
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: var(--spacing-xs);
+            font-weight: 500;
+        }
+
+        .form-row {
+            display: flex;
+            gap: var(--spacing-md);
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .unavailable {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .unavailable::after {
+            content: "Fully Booked";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            background-color: rgba(255, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+        
+        /* Date picker styling */
+        .date-picker-container {
+            margin-bottom: var(--spacing-lg);
+            background-color: var(--bg-white);
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .date-picker-container label {
+            display: block;
+            margin-bottom: var(--spacing-xs);
+            font-weight: 500;
+        }
+        
+        .date-picker {
+            padding: var(--spacing-sm);
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        .loading, .no-slots, .error {
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius);
+            width: 100%;
+            text-align: center;
+        }
+        
+        .loading {
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+        }
+        
+        .no-slots {
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            font-style: italic;
+        }
+        
+        .error {
+            background-color: #fee2e2;
+            color: #ef4444;
+        }
+
+        .booking-error {
+            background-color: #ef4444;
+            color: white;
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            display: none;
+            text-align: center;
+            animation: fadeInDown 0.5s;
+        }
+        
+        #booking-details {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-md);
+            margin-top: var(--spacing-md);
+            text-align: left;
+            display: inline-block;
+            font-weight: 300;
+            line-height: 1.6;
+        }
+        
+        #form-error {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border-left: 4px solid #ef4444;
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+            border-radius: 0 var(--border-radius) var(--border-radius) 0;
+            font-weight: 500;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .booking-item-layout {
+                flex-direction: column; /* Stack image and content */
+            }
+
+            .booking-item-image {
+                width: 100%; /* Full width image */
+                height: 200px; /* Increase height for mobile */
+                margin-right: 0; /* No margin when stacked */
+                margin-bottom: var(--spacing-md); /* Add space below image */
+            }
+
+            .booking-item-content-wrapper {
+                width: 100%; /* Ensure content takes full width */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <div class="menu-toggle" id="menu-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="nav-links" id="nav-links">
+            <a href="/"><i class="fas fa-home"></i> Home</a>
+            <a href="/chat.html"><i class="fas fa-message"></i> Chat</a>
+            <a href="/room-service.html"><i class="fas fa-utensils"></i> Room Service</a>
+            <a href="/booking.html" class="active"><i class="fas fa-calendar"></i> Bookings</a>
+            <a href="/property-info.html"><i class="fas fa-circle-info"></i> Property Info</a>
+            <a href="/local-map.html"><i class="fas fa-map-pin"></i> Local Map</a>
+            <a href="/feedback.html"><i class="fas fa-star"></i> Feedback</a>
+            <a href="#" id="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="confirmation" class="confirmation">
+            <h3>Booking Confirmed!</h3>
+            <p id="confirmation-message">Your booking has been successfully confirmed. You'll receive a confirmation shortly.</p>
+            <p id="booking-details"></p>
+        </div>
+        
+        <div id="booking-error" class="booking-error">
+            <h3>Booking Error</h3>
+            <p id="error-message">There was a problem with your booking. Please try again.</p>
+        </div>
+
+        <div class="card">
+            <h1>Bookings</h1>
+            <p>Book hotel amenities or local tours during your stay with us.</p>
+        </div>
+
+        <div class="booking-tabs">
+            <div class="booking-tab active" data-tab="amenities">Hotel Amenities</div>
+            <div class="booking-tab" data-tab="tours">Local Tours</div>
+        </div>
+
+        <div id="amenities" class="booking-content active">
+            <div class="booking-item">
+                <div class="booking-item-layout">
+                    <div class="booking-item-image">
+                        <img src="https://images.unsplash.com/photo-1596178065887-1198b6148b2b?w=200&h=160&fit=crop&q=80" alt="Spa">
+                    </div>
+                    <div class="booking-item-content-wrapper">
+                        <div class="booking-header">
+                            <h3 class="booking-title">Spa</h3>
+                            <div class="booking-price">$85</div>
+                        </div>
+                        <div class="booking-details">
+                            <p>Indulge in a relaxing massage or facial treatment at our luxury spa.</p>
+                            <p><strong>Duration:</strong> 60 minutes</p>
+                            <p><strong>Available:</strong> Daily, 9:00 AM - 5:00 PM</p>
+                        </div>
+                        <div class="booking-time">
+                            <div class="time-slot">9:00 AM</div>
+                            <div class="time-slot">10:00 AM</div>
+                            <div class="time-slot">11:00 AM</div>
+                            <div class="time-slot">12:00 PM</div>
+                            <div class="time-slot">1:00 PM</div>
+                            <div class="time-slot">2:00 PM</div>
+                            <div class="time-slot">3:00 PM</div>
+                            <div class="time-slot">4:00 PM</div>
+                        </div>
+                        <button class="btn book-btn" data-service="Spa">Book Now</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="booking-item">
+                <div class="booking-item-layout">
+                    <div class="booking-item-image">
+                        <img src="https://images.unsplash.com/photo-1623718649591-311775a30c43?w=200&h=160&fit=crop&q=80" alt="Pool">
+                    </div>
+                    <div class="booking-item-content-wrapper">
+                        <div class="booking-header">
+                            <h3 class="booking-title">Pool</h3>
+                            <div class="booking-price">$30</div>
+                        </div>
+                        <div class="booking-details">
+                            <p>Reserve our private pool area for your exclusive use.</p>
+                            <p><strong>Duration:</strong> 60 minutes</p>
+                            <p><strong>Available:</strong> Daily, 8:00 AM - 6:00 PM</p>
+                        </div>
+                        <div class="booking-time">
+                            <div class="time-slot">8:00 AM</div>
+                            <div class="time-slot">9:00 AM</div>
+                            <div class="time-slot">10:00 AM</div>
+                            <div class="time-slot">11:00 AM</div>
+                            <div class="time-slot">12:00 PM</div>
+                            <div class="time-slot">1:00 PM</div>
+                            <div class="time-slot">2:00 PM</div>
+                            <div class="time-slot">3:00 PM</div>
+                            <div class="time-slot">4:00 PM</div>
+                            <div class="time-slot">5:00 PM</div>
+                        </div>
+                        <button class="btn book-btn" data-service="Pool">Book Now</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="booking-item">
+                <div class="booking-item-layout">
+                    <div class="booking-item-image">
+                        <img src="https://images.unsplash.com/photo-1576678927484-cc907957088c?w=200&h=160&fit=crop&q=80" alt="Gym">
+                    </div>
+                    <div class="booking-item-content-wrapper">
+                        <div class="booking-header">
+                            <h3 class="booking-title">Gym</h3>
+                            <div class="booking-price">$60</div>
+                        </div>
+                        <div class="booking-details">
+                            <p>Personal training session with our experienced fitness instructors.</p>
+                            <p><strong>Duration:</strong> 90 minutes</p>
+                            <p><strong>Available:</strong> Daily, 6:00 AM - 10:00 PM</p>
+                        </div>
+                        <div class="booking-time">
+                            <div class="time-slot">6:00 AM</div>
+                            <div class="time-slot">8:00 AM</div>
+                            <div class="time-slot">10:00 AM</div>
+                            <div class="time-slot">12:00 PM</div>
+                            <div class="time-slot">2:00 PM</div>
+                            <div class="time-slot">4:00 PM</div>
+                            <div class="time-slot">6:00 PM</div>
+                            <div class="time-slot">8:00 PM</div>
+                        </div>
+                        <button class="btn book-btn" data-service="Gym">Book Now</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tours" class="booking-content">
+            <div class="booking-item">
+                <div class="booking-item-layout">
+                    <div class="booking-item-image">
+                        <img src="https://images.unsplash.com/photo-1617318864261-be4599d37012?w=200&h=160&fit=crop&q=80" alt="City Tour">
+                    </div>
+                    <div class="booking-item-content-wrapper">
+                        <div class="booking-header">
+                            <h3 class="booking-title">City Tour</h3>
+                            <div class="booking-price">$45</div>
+                        </div>
+                        <div class="booking-details">
+                            <p>Guided tour of the city's historic sites and landmarks.</p>
+                            <p><strong>Duration:</strong> 2 hours</p>
+                            <p><strong>Available:</strong> Daily, 10:00 AM - 4:00 PM</p>
+                        </div>
+                        <div class="booking-time">
+                            <div class="time-slot">10:00 AM</div>
+                            <div class="time-slot">12:00 PM</div>
+                            <div class="time-slot">2:00 PM</div>
+                        </div>
+                        <button class="btn book-btn" data-service="City Tour">Book Now</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="booking-item">
+                <div class="booking-item-layout">
+                    <div class="booking-item-image">
+                        <img src="https://images.unsplash.com/photo-1558670460-cad0c19b1840?w=200&h=160&fit=crop&q=80" alt="Wine Tasting">
+                    </div>
+                    <div class="booking-item-content-wrapper">
+                        <div class="booking-header">
+                            <h3 class="booking-title">Wine Tasting</h3>
+                            <div class="booking-price">$95</div>
+                        </div>
+                        <div class="booking-details">
+                            <p>Visit local wineries for tastings and learn about wine production.</p>
+                            <p><strong>Duration:</strong> 90 minutes</p>
+                            <p><strong>Available:</strong> Tuesday, Thursday, Saturday from 2:00 PM - 6:00 PM</p>
+                        </div>
+                        <div class="booking-time">
+                            <div class="time-slot">2:00 PM</div>
+                            <div class="time-slot">4:00 PM</div>
+                        </div>
+                        <button class="btn book-btn" data-service="Wine Tasting">Book Now</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="booking-item">
+                <div class="booking-item-layout">
+                    <div class="booking-item-image">
+                        <img src="https://images.unsplash.com/photo-1551918120-9739cb430c6d?w=200&h=160&fit=crop&q=80" alt="Historic Walk">
+                    </div>
+                    <div class="booking-item-content-wrapper">
+                        <div class="booking-header">
+                            <h3 class="booking-title">Historic Walk</h3>
+                            <div class="booking-price">$35</div>
+                        </div>
+                        <div class="booking-details">
+                            <p>Guided walking tour through historic districts and landmarks.</p>
+                            <p><strong>Duration:</strong> 60 minutes</p>
+                            <p><strong>Available:</strong> Daily, 9:00 AM - 3:00 PM</p>
+                        </div>
+                        <div class="booking-time">
+                            <div class="time-slot">9:00 AM</div>
+                            <div class="time-slot">10:00 AM</div>
+                            <div class="time-slot">11:00 AM</div>
+                            <div class="time-slot">12:00 PM</div>
+                            <div class="time-slot">1:00 PM</div>
+                            <div class="time-slot">2:00 PM</div>
+                        </div>
+                        <button class="btn book-btn" data-service="Historic Walk">Book Now</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="booking-form-container" style="display: none;" class="card">
+            <h2>Complete Your Booking</h2>
+            <p id="booking-summary">Please provide your details to confirm your booking.</p>
+            
+            <div id="form-error" class="error" style="display: none; margin-bottom: var(--spacing-md);"></div>
+            
+            <form id="booking-form" class="booking-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="booking-name">Name</label>
+                        <input type="text" id="booking-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="booking-email">Email</label>
+                        <input type="email" id="booking-email" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="booking-notes">Special Requests</label>
+                    <textarea id="booking-notes" rows="3"></textarea>
+                </div>
+                
+                <button type="submit" class="btn">Confirm Booking</button>
+                <button type="button" id="cancel-booking" class="btn btn-secondary">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Authentication check script - must be first -->
+    <script src="/js/auth.js"></script>
+    <!-- Booking functionality -->
+    <script src="/js/booking.js"></script>
+    <!-- Navigation script for mobile menu -->
+    <script src="/js/navigation.js"></script>
+</body>
+</html> 

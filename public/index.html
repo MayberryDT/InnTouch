@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inn Touch - Home</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/navigation.css">
+    <style>
+        .welcome-container {
+            background-color: var(--bg-white);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-md);
+            text-align: center;
+        }
+
+        .welcome-container h1 {
+            color: var(--primary-blue);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .welcome-container p {
+            margin-bottom: var(--spacing-md);
+            color: var(--text-dark);
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-lg);
+        }
+
+        .service-card {
+            background-color: var(--bg-white);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow-md);
+            transition: transform 0.3s;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .service-card i {
+            font-size: 2.5rem;
+            color: var(--primary-blue);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .service-card h3 {
+            margin-bottom: var(--spacing-sm);
+            color: var(--text-dark);
+        }
+
+        .service-card p {
+            margin-bottom: var(--spacing-md);
+            color: var(--text-dark);
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <div class="menu-toggle" id="menu-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="nav-links" id="nav-links">
+            <a href="/" class="active"><i class="fas fa-home"></i> Home</a>
+            <a href="/chat.html"><i class="fas fa-message"></i> Chat</a>
+            <a href="/room-service.html"><i class="fas fa-utensils"></i> Room Service</a>
+            <a href="/booking.html"><i class="fas fa-calendar"></i> Bookings</a>
+            <a href="/property-info.html"><i class="fas fa-circle-info"></i> Property Info</a>
+            <a href="/local-map.html"><i class="fas fa-map-pin"></i> Local Map</a>
+            <a href="/feedback.html"><i class="fas fa-star"></i> Feedback</a>
+            <a href="#" id="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="welcome-container">
+            <h1>Welcome to Inn Touch</h1>
+            <p>Hello <span id="guest-name">Guest</span>! You're staying in room <span id="room-number">101</span>.</p>
+            <p>We're delighted to have you with us. Use this app to make the most of your stay!</p>
+        </div>
+
+        <div class="services-grid">
+            <div class="service-card text-center">
+                <i class="fas fa-headset"></i>
+                <h3>24/7 Assistance</h3>
+                <p>Need help? Our team is available around the clock to assist you with any questions or concerns.</p>
+                <a href="/chat.html" class="btn">Chat with Us</a>
+            </div>
+
+            <div class="service-card text-center">
+                <i class="fas fa-utensils"></i>
+                <h3>Room Service</h3>
+                <p>Hungry? Browse our menu and order delicious food and drinks directly to your room.</p>
+                <a href="/room-service.html" class="btn">Order Now</a>
+            </div>
+
+            <div class="service-card text-center">
+                <i class="fas fa-calendar"></i>
+                <h3>Bookings</h3>
+                <p>Explore and book hotel amenities and tours to enhance your stay experience.</p>
+                <a href="/booking.html" class="btn">Book Now</a>
+            </div>
+
+            <div class="service-card text-center">
+                <i class="fas fa-map-pin"></i>
+                <h3>Local Area</h3>
+                <p>Discover the best attractions, restaurants, and activities in the surrounding area.</p>
+                <a href="/local-map.html" class="btn">Explore</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/navigation.js"></script>
+    <script src="/js/home.js"></script>
+</body>
+</html> 

@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inn Touch - Room Service</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Playfair+Display:wght@700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/navigation.css">
+    <style>
+        .confirmation {
+            background-color: #10B981; /* Success Green from frontend guidelines */
+            color: white;
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            display: none;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+            transform: translateY(-20px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .confirmation.slide-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .confirmation h3 {
+            margin-bottom: var(--spacing-sm);
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 1.25rem;
+        }
+
+        .confirmation p {
+            margin-bottom: var(--spacing-sm);
+            color: white;
+        }
+
+        .confirmation-details {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-md);
+            margin-top: var(--spacing-sm);
+            margin-bottom: var(--spacing-sm);
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out, margin 0.3s ease-in-out, padding 0.3s ease-in-out;
+        }
+
+        .confirmation.slide-in .confirmation-details {
+            max-height: 500px;
+            margin-top: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .confirmation-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-xs);
+            font-size: 0.9rem;
+            text-align: left;
+        }
+
+        .confirmation-total {
+            display: flex;
+            justify-content: space-between;
+            margin-top: var(--spacing-sm);
+            padding-top: var(--spacing-sm);
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            font-weight: 700;
+        }
+
+        .confirmation-close {
+            background: none;
+            border: 2px solid white;
+            color: white;
+            padding: var(--spacing-xs) var(--spacing-md);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            margin-top: var(--spacing-sm);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .confirmation-close:hover {
+            background-color: white;
+            color: #10B981;
+        }
+
+        /* Toast notification for transient confirmation */
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: var(--spacing-md);
+            background: linear-gradient(to right, #60A5FA, #3B82F6);
+            color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s, transform 0.5s;
+            font-family: 'Inter', sans-serif;
+            max-width: 300px;
+        }
+
+        .toast-notification.show {
+            opacity: 1;
+            transform: translateY(0);
+            display: block;
+        }
+
+        .toast-notification i {
+            margin-right: var(--spacing-sm);
+            font-size: 1.2rem;
+        }
+
+        .menu-title {
+            margin-bottom: var(--spacing-md);
+            color: var(--primary-blue);
+            border-bottom: 2px solid var(--primary-blue);
+            padding-bottom: var(--spacing-sm);
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+        }
+
+        .menu-section {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .menu-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--spacing-md);
+            padding-bottom: var(--spacing-sm);
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s ease;
+            padding: var(--spacing-sm);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Add subtle card shadow from guidelines */
+        }
+
+        .menu-item:hover {
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+
+        .menu-item-details {
+            flex: 1;
+        }
+
+        .menu-item-name {
+            font-weight: 500;
+            margin-bottom: var(--spacing-xs);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .menu-item-description {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: var(--spacing-xs);
+            font-family: 'Inter', sans-serif;
+            font-weight: 400;
+        }
+
+        .menu-item-image {
+            width: 160px; /* Match new image size */
+            height: 160px; /* Match new image size */
+            margin-right: var(--spacing-md);
+            flex-shrink: 0; 
+            overflow: hidden; /* Ensure image stays within bounds */
+            border-radius: var(--border-radius-sm); /* Rounded corners for image */
+            border: 1px solid #eee; /* Add border like bookings */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Add shadow like bookings/cards */
+        }
+
+        .menu-item-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; 
+            display: block; /* Remove extra space below image */
+        }
+
+        .menu-item-price {
+            font-weight: 500;
+            color: var(--primary-blue);
+            margin-right: var(--spacing-md);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .menu-item-quantity {
+            display: flex;
+            align-items: center;
+            margin-left: var(--spacing-md);
+        }
+
+        .quantity-btn {
+            width: 30px;
+            height: 30px;
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .quantity-btn:hover {
+            background-color: var(--primary-blue-dark);
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .quantity-btn:active {
+            transform: scale(0.95);
+        }
+
+        .quantity-input {
+            width: 40px;
+            text-align: center;
+            margin: 0 var(--spacing-xs);
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px;
+            transition: border-color 0.3s;
+        }
+
+        .quantity-input:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 2px rgba(59,130,246,0.5);
+            outline: none;
+        }
+
+        .quantity-input.item-added {
+            animation: pulse 0.3s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); background-color: rgba(59,130,246,0.1); }
+            100% { transform: scale(1); }
+        }
+
+        .order-total {
+            margin-top: var(--spacing-lg);
+            padding: var(--spacing-md);
+            background-color: #f8f9fa;
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            text-align: right;
+            transition: background-color 0.3s;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .total-amount {
+            color: var(--primary-blue);
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        button[type="submit"] {
+            margin-top: 20px;
+            width: 100%;
+            background: linear-gradient(to right, #60A5FA, #3B82F6); /* Accent Gradient from guidelines */
+            transition: transform 0.3s, box-shadow 0.3s, background-color 0.3s;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            font-size: 1.125rem;
+            letter-spacing: 0.5px;
+            box-shadow: var(--shadow-md);
+        }
+
+        button[type="submit"]:hover {
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: var(--shadow-lg);
+        }
+
+        button[type="submit"]:active {
+            transform: translateY(1px) scale(0.99);
+        }
+
+        button[type="submit"]:disabled {
+            background: #9CA3AF;
+            transform: none;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        button[type="submit"].btn-active {
+            background: linear-gradient(to right, #60A5FA, #3B82F6);
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            color: var(--primary-blue);
+            font-size: 2.25rem;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        p {
+            font-family: 'Inter', sans-serif;
+            margin-bottom: var(--spacing-md);
+            color: var(--text-dark);
+        }
+
+        /* Container for menu items on larger screens */
+        @media (min-width: 768px) {
+            .menu-section-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: var(--spacing-md);
+            }
+        }
+
+        /* Layout for menu items */
+        .menu-item-layout {
+            display: flex;
+            align-items: flex-start; /* Align top for desktop */
+            width: 100%;
+        }
+
+        .menu-item-content-wrapper {
+            display: flex;
+            flex-grow: 1;
+            justify-content: space-between;
+            align-items: flex-start; /* Align details and quantity */
+        }
+
+        /* Responsive adjustments for menu items */
+        @media (max-width: 767px) { /* Target mobile */
+            .menu-item-layout {
+                flex-direction: column;
+            }
+
+            .menu-item-image {
+                width: 100%;
+                height: 200px; /* Keep a reasonable mobile height */
+                margin-right: 0;
+                margin-bottom: var(--spacing-sm);
+            }
+
+            .menu-item-content-wrapper {
+                flex-direction: column; /* Stack details and quantity */
+                width: 100%;
+                align-items: stretch; /* Stretch content */
+            }
+
+            .menu-item-details {
+                margin-bottom: var(--spacing-sm); /* Add space below details */
+            }
+
+            .menu-item-price {
+                margin-bottom: var(--spacing-sm); /* Add space below price */
+                align-self: flex-start; /* Align price left */
+            }
+
+            .menu-item-quantity {
+                margin-left: 0; /* Remove left margin */
+                align-self: flex-end; /* Align quantity controls right */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <div class="menu-toggle" id="menu-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="nav-links" id="nav-links">
+            <a href="/"><i class="fas fa-home"></i> Home</a>
+            <a href="/chat.html"><i class="fas fa-message"></i> Chat</a>
+            <a href="/room-service.html" class="active"><i class="fas fa-utensils"></i> Room Service</a>
+            <a href="/booking.html"><i class="fas fa-calendar"></i> Bookings</a>
+            <a href="/property-info.html"><i class="fas fa-circle-info"></i> Property Info</a>
+            <a href="/local-map.html"><i class="fas fa-map-pin"></i> Local Map</a>
+            <a href="/feedback.html"><i class="fas fa-star"></i> Feedback</a>
+            <a href="#" id="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="confirmation" class="confirmation">
+            <h3>Order Submitted!</h3>
+            <p>Your order has been received and will be delivered to your room shortly.</p>
+            <div class="confirmation-details" id="confirmation-details">
+                <div id="confirmation-items"></div>
+                <div class="confirmation-total">
+                    <span>Total:</span>
+                    <span id="confirmation-amount"></span>
+                </div>
+            </div>
+            <p><strong>Estimated delivery time:</strong> <span id="delivery-time">30-45 minutes</span></p>
+            <button class="confirmation-close" id="confirmation-close">Continue Shopping</button>
+        </div>
+
+        <!-- Toast notification for transaction completion -->
+        <div id="toast-notification" class="toast-notification">
+            <i class="fas fa-check-circle"></i> Order placed successfully!
+        </div>
+
+        <div class="card">
+            <h1>Room Service</h1>
+            <p>Order delicious food and drinks directly to your room. Our kitchen is open from 6:00 AM to 11:00 PM daily.</p>
+        </div>
+
+        <form id="room-service-form">
+            <div class="menu-section">
+                <h2 class="menu-title">Breakfast</h2>
+                
+                <div class="menu-section-grid">
+                    <div class="menu-item">
+                        <div class="menu-item-layout">
+                            <div class="menu-item-image">
+                                <img src="https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=160&h=160&fit=crop&q=80" alt="Continental Breakfast">
+                            </div>
+                            <div class="menu-item-content-wrapper">
+                                <div class="menu-item-details">
+                                    <div class="menu-item-name">Continental Breakfast</div>
+                                    <div class="menu-item-description">Assorted pastries, toast, jam, butter, yogurt, and fresh fruit</div>
+                                </div>
+                                <div class="menu-item-price">$12.00</div>
+                                <div class="menu-item-quantity">
+                                    <button type="button" class="quantity-btn decrease" data-id="breakfast1">-</button>
+                                    <input type="number" class="quantity-input" data-id="breakfast1" data-price="12.00" min="0" value="0">
+                                    <button type="button" class="quantity-btn increase" data-id="breakfast1">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="menu-item">
+                        <div class="menu-item-layout">
+                            <div class="menu-item-image">
+                                <img src="https://images.unsplash.com/photo-1513442542250-854d436a73f2?w=160&h=160&fit=crop&q=80" alt="American Breakfast">
+                            </div>
+                            <div class="menu-item-content-wrapper">
+                                <div class="menu-item-details">
+                                    <div class="menu-item-name">American Breakfast</div>
+                                    <div class="menu-item-description">Two eggs any style, bacon or sausage, hash browns, and toast</div>
+                                </div>
+                                <div class="menu-item-price">$15.00</div>
+                                <div class="menu-item-quantity">
+                                    <button type="button" class="quantity-btn decrease" data-id="breakfast2">-</button>
+                                    <input type="number" class="quantity-input" data-id="breakfast2" data-price="15.00" min="0" value="0">
+                                    <button type="button" class="quantity-btn increase" data-id="breakfast2">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="menu-item">
+                        <div class="menu-item-layout">
+                            <div class="menu-item-image">
+                                <img src="https://images.unsplash.com/photo-1525351484163-7529414344d8?w=160&h=160&fit=crop&q=80" alt="Avocado Toast">
+                            </div>
+                            <div class="menu-item-content-wrapper">
+                                <div class="menu-item-details">
+                                    <div class="menu-item-name">Avocado Toast</div>
+                                    <div class="menu-item-description">Whole grain toast topped with avocado, poached egg, and microgreens</div>
+                                </div>
+                                <div class="menu-item-price">$13.00</div>
+                                <div class="menu-item-quantity">
+                                    <button type="button" class="quantity-btn decrease" data-id="breakfast3">-</button>
+                                    <input type="number" class="quantity-input" data-id="breakfast3" data-price="13.00" min="0" value="0">
+                                    <button type="button" class="quantity-btn increase" data-id="breakfast3">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="menu-section">
+                <h2 class="menu-title">Lunch & Dinner</h2>
+                
+                <div class="menu-section-grid">
+                    <div class="menu-item">
+                        <div class="menu-item-layout">
+                            <div class="menu-item-image">
+                                <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=160&h=160&fit=crop&q=80" alt="Signature Burger">
+                            </div>
+                            <div class="menu-item-content-wrapper">
+                                <div class="menu-item-details">
+                                    <div class="menu-item-name">Signature Burger</div>
+                                    <div class="menu-item-description">Angus beef patty with cheddar, lettuce, tomato, onion, and special sauce, served with fries</div>
+                                </div>
+                                <div class="menu-item-price">$18.00</div>
+                                <div class="menu-item-quantity">
+                                    <button type="button" class="quantity-btn decrease" data-id="lunch1">-</button>
+                                    <input type="number" class="quantity-input" data-id="lunch1" data-price="18.00" min="0" value="0">
+                                    <button type="button" class="quantity-btn increase" data-id="lunch1">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="menu-item">
+                        <div class="menu-item-layout">
+                            <div class="menu-item-image">
+                                <img src="https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=160&h=160&fit=crop&q=80" alt="Grilled Salmon">
+                            </div>
+                            <div class="menu-item-content-wrapper">
+                                <div class="menu-item-details">
+                                    <div class="menu-item-name">Grilled Salmon</div>
+                                    <div class="menu-item-description">Fresh salmon fillet with seasonal vegetables and lemon herb sauce</div>
+                                </div>
+                                <div class="menu-item-price">$24.00</div>
+                                <div class="menu-item-quantity">
+                                    <button type="button" class="quantity-btn decrease" data-id="lunch2">-</button>
+                                    <input type="number" class="quantity-input" data-id="lunch2" data-price="24.00" min="0" value="0">
+                                    <button type="button" class="quantity-btn increase" data-id="lunch2">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="menu-item">
+                        <div class="menu-item-layout">
+                            <div class="menu-item-image">
+                                <img src="https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=160&h=160&fit=crop&q=80" alt="Vegetarian Pasta">
+                            </div>
+                            <div class="menu-item-content-wrapper">
+                                <div class="menu-item-details">
+                                    <div class="menu-item-name">Vegetarian Pasta</div>
+                                    <div class="menu-item-description">Penne pasta with roasted vegetables, cherry tomatoes, and basil pesto</div>
+                                </div>
+                                <div class="menu-item-price">$16.00</div>
+                                <div class="menu-item-quantity">
+                                    <button type="button" class="quantity-btn decrease" data-id="lunch3">-</button>
+                                    <input type="number" class="quantity-input" data-id="lunch3" data-price="16.00" min="0" value="0">
+                                    <button type="button" class="quantity-btn increase" data-id="lunch3">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="menu-section">
+                <h2 class="menu-title">Drinks</h2>
+                
+                <div class="menu-section-grid">
+                    <div class="menu-item">
+                        <div class="menu-item-layout">
+                            <div class="menu-item-image">
+                                <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=160&h=160&fit=crop&q=80" alt="Freshly Brewed Coffee">
+                            </div>
+                            <div class="menu-item-content-wrapper">
+                                <div class="menu-item-details">
+                                    <div class="menu-item-name">Freshly Brewed Coffee</div>
+                                    <div class="menu-item-description">Regular or decaf</div>
+                                </div>
+                                <div class="menu-item-price">$4.00</div>
+                                <div class="menu-item-quantity">
+                                    <button type="button" class="quantity-btn decrease" data-id="drink1">-</button>
+                                    <input type="number" class="quantity-input" data-id="drink1" data-price="4.00" min="0" value="0">
+                                    <button type="button" class="quantity-btn increase" data-id="drink1">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="menu-item">
+                        <div class="menu-item-layout">
+                            <div class="menu-item-image">
+                                <img src="https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=160&h=160&fit=crop&q=80" alt="Fresh Orange Juice">
+                            </div>
+                            <div class="menu-item-content-wrapper">
+                                <div class="menu-item-details">
+                                    <div class="menu-item-name">Fresh Orange Juice</div>
+                                    <div class="menu-item-description">Freshly squeezed</div>
+                                </div>
+                                <div class="menu-item-price">$5.00</div>
+                                <div class="menu-item-quantity">
+                                    <button type="button" class="quantity-btn decrease" data-id="drink2">-</button>
+                                    <input type="number" class="quantity-input" data-id="drink2" data-price="5.00" min="0" value="0">
+                                    <button type="button" class="quantity-btn increase" data-id="drink2">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="menu-item">
+                        <div class="menu-item-layout">
+                            <div class="menu-item-image">
+                                <img src="https://images.unsplash.com/photo-1610631787813-9eeb1a2386cc?w=160&h=160&fit=crop&q=80" alt="Bottle of Wine">
+                            </div>
+                            <div class="menu-item-content-wrapper">
+                                <div class="menu-item-details">
+                                    <div class="menu-item-name">Bottle of Wine</div>
+                                    <div class="menu-item-description">House red or white wine, please specify in notes</div>
+                                </div>
+                                <div class="menu-item-price">$30.00</div>
+                                <div class="menu-item-quantity">
+                                    <button type="button" class="quantity-btn decrease" data-id="drink3">-</button>
+                                    <input type="number" class="quantity-input" data-id="drink3" data-price="30.00" min="0" value="0">
+                                    <button type="button" class="quantity-btn increase" data-id="drink3">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="special-instructions">Special Instructions:</label>
+                <textarea id="special-instructions" rows="3" placeholder="Any allergies or special requests?"></textarea>
+            </div>
+
+            <div class="order-total">
+                Total: <span id="total-amount" class="total-amount">$0.00</span>
+            </div>
+
+            <button type="submit" class="btn" disabled>Place Order</button>
+        </form>
+    </div>
+
+    <!-- Authentication check script - must be first -->
+    <script src="/js/auth.js"></script>
+    <!-- Room service functionality -->
+    <script src="/js/room-service.js"></script>
+    <!-- Navigation script for mobile menu -->
+    <script src="/js/navigation.js"></script>
+</body>
+</html> 

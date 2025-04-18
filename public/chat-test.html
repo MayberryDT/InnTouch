@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat API Test</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        button { padding: 10px 15px; margin: 10px 0; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Escalated Chats API Test</h1>
+    
+    <div>
+        <button id="test-api">Test Actual API</button>
+        <button id="test-mock">Test Mock API (port 3001)</button>
+    </div>
+    
+    <h2>Response:</h2>
+    <pre id="response">Click a button to test</pre>
+    
+    <h2>Status:</h2>
+    <pre id="status">Ready</pre>
+    
+    <script>
+        document.getElementById('test-api').addEventListener('click', async () => {
+            document.getElementById('status').textContent = 'Testing real API...';
+            const responseElement = document.getElementById('response');
+            
+            try {
+                // Get auth token if available
+                const authToken = localStorage.getItem('staffToken') || '';
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                
+                if (authToken) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+                
+                // Make the API call
+                const response = await fetch('/api/chat/escalated', { headers });
+                const statusText = `Status: ${response.status} ${response.statusText}`;
+                
+                try {
+                    const data = await response.json();
+                    responseElement.textContent = JSON.stringify(data, null, 2);
+                    document.getElementById('status').textContent = statusText;
+                } catch (err) {
+                    responseElement.textContent = 'Error parsing JSON: ' + await response.text();
+                    document.getElementById('status').textContent = statusText + ' (JSON parse error)';
+                }
+            } catch (error) {
+                responseElement.textContent = 'Error: ' + error.message;
+                document.getElementById('status').textContent = 'Failed';
+            }
+        });
+        
+        document.getElementById('test-mock').addEventListener('click', async () => {
+            document.getElementById('status').textContent = 'Testing mock API...';
+            const responseElement = document.getElementById('response');
+            
+            try {
+                // Make the API call to the mock server
+                const response = await fetch('http://localhost:3001/api/chat/escalated');
+                const statusText = `Status: ${response.status} ${response.statusText}`;
+                
+                try {
+                    const data = await response.json();
+                    responseElement.textContent = JSON.stringify(data, null, 2);
+                    document.getElementById('status').textContent = statusText;
+                } catch (err) {
+                    responseElement.textContent = 'Error parsing JSON: ' + await response.text();
+                    document.getElementById('status').textContent = statusText + ' (JSON parse error)';
+                }
+            } catch (error) {
+                responseElement.textContent = 'Error: ' + error.message;
+                document.getElementById('status').textContent = 'Failed';
+            }
+        });
+    </script>
+</body>
+</html> 

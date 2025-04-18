@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inn Touch - Staff Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Playfair+Display:wght@700&display=swap">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        h1, h2, h3 {
+            font-family: 'Playfair Display', serif;
+            color: var(--primary-blue);
+        }
+        
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+        
+        @media (min-width: 768px) {
+            .dashboard-container {
+                grid-template-columns: 1fr 2fr;
+            }
+        }
+        
+        .sidebar {
+            position: sticky;
+            top: 1.5rem;
+            align-self: start;
+        }
+        
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .logout-btn {
+            background-color: transparent;
+            color: var(--error-red);
+            border: 1px solid var(--error-red);
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            border-bottom: 1px solid var(--light-gray);
+            margin-bottom: 1.5rem;
+        }
+        
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-dark);
+            position: relative;
+        }
+        
+        .tab-button.active {
+            color: var(--primary-blue);
+        }
+        
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--primary-blue);
+        }
+        
+        .notification-badge {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: var(--accent-teal);
+            color: var(--white);
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+        }
+        
+        .notification-item {
+            padding: 0.75rem;
+            border-left: 4px solid transparent;
+            margin-bottom: 0.5rem;
+            transition: background-color 0.2s;
+        }
+        
+        .notification-item:hover {
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+        
+        .urgency-level-1 {
+            border-left-color: var(--secondary-blue);
+        }
+        
+        .urgency-level-2 {
+            border-left-color: #F59E0B; /* Amber */
+            background-color: rgba(245, 158, 11, 0.05);
+        }
+        
+        .urgency-level-3 {
+            border-left-color: var(--error-red);
+            background-color: rgba(239, 68, 68, 0.05);
+        }
+        
+        .guest-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
+        }
+        
+        .guest-name {
+            font-weight: 500;
+        }
+        
+        .last-message {
+            margin-bottom: 0.25rem;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .wait-time {
+            font-size: 0.75rem;
+            color: #666;
+        }
+        
+        .notification-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .accept-btn, .acknowledge-btn {
+            font-size: 0.875rem;
+            padding: 0.25rem 0.5rem;
+        }
+        
+        .sync-message {
+            display: none;
+            padding: 0.75rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            border-radius: 0.25rem;
+        }
+        
+        .dashboard-section {
+            display: none;
+        }
+        
+        .dashboard-section.active {
+            display: block;
+        }
+        
+        .dashboard-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        
+        .dashboard-item:last-child {
+            border-bottom: none;
+        }
+        
+        .item-details {
+            flex-grow: 1;
+        }
+        
+        .item-title {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+        
+        .item-description {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .item-status {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            background-color: var(--light-gray);
+            align-self: flex-start;
+        }
+        
+        .status-pending {
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+        
+        .status-confirmed {
+            background-color: #DCFCE7;
+            color: #166534;
+        }
+        
+        .status-delivered, .status-completed {
+            background-color: #DBEAFE;
+            color: #1E40AF;
+        }
+        
+        .status-cancelled {
+            background-color: #FEE2E2;
+            color: #991B1B;
+        }
+        
+        /* Statistics and distribution styles */
+        .dashboard-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        
+        .stat-item {
+            padding: 0.75rem;
+        }
+        
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-label {
+            font-size: 0.875rem;
+            color: #666;
+        }
+        
+        .rating-distribution {
+            padding: 0 1rem;
+        }
+        
+        .distribution-label {
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+        }
+        
+        .distribution-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .distribution-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .distribution-bar-container {
+            flex-grow: 1;
+            height: 12px;
+            background-color: #eee;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .distribution-bar {
+            height: 100%;
+            background: linear-gradient(to right, var(--primary-blue-light), var(--primary-blue));
+            border-radius: 6px;
+        }
+        
+        .distribution-count {
+            font-size: 0.75rem;
+            color: #666;
+            min-width: 60px;
+            text-align: right;
+        }
+        
+        /* Loading indicator */
+        .loading-indicator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            color: #666;
+        }
+        
+        .loading-indicator i {
+            font-size: 2rem;
+            color: var(--primary-blue);
+            margin-bottom: 1rem;
+        }
+        
+        /* Error message */
+        .error {
+            padding: 1rem;
+            background-color: rgba(239, 68, 68, 0.1);
+            border-radius: 0.5rem;
+            color: #ef4444;
+            text-align: center;
+        }
+        
+        .error i {
+            margin-right: 0.5rem;
+        }
+        
+        /* Small button style */
+        .btn-sm {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            margin-right: 0.25rem;
+        }
+        
+        /* Item actions */
+        .item-actions {
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="/staff-dashboard.html" style="font-weight: 700;"><i class="fas fa-tachometer-alt"></i> Staff Dashboard</a>
+        <a href="#" id="sync-button" style="margin-left: 1rem;"><i class="fas fa-sync-alt"></i> Sync Cloudbeds Data</a>
+        <a href="/staff-chat.html" style="margin-left: 1rem;"><i class="fas fa-comments"></i> Staff Chat</a>
+        <div style="margin-left: auto;">
+            <span id="staff-name" style="color: white !important; margin-right: 1rem;">Staff Name</span>
+            <button id="logout-button" class="logout-btn" style="color: white !important;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>Staff Dashboard</h1>
+        </div>
+        
+        <div class="dashboard-container">
+            <div class="sidebar">
+                <div id="sync-success" class="sync-message success">
+                    <i class="fas fa-check"></i> Data synced successfully!
+                </div>
+                
+                <div id="sync-error" class="sync-message error">
+                    <i class="fas fa-times"></i> Sync failed. Try again.
+                </div>
+
+                <div class="card">
+                    <h2>Notifications <span id="notification-count" class="notification-badge">0</span></h2>
+                    <div id="notifications-list">
+                        <p class="empty-state" style="text-align: center; padding: 1rem; color: #666;">No new notifications.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="main-content">
+                <div class="tab-buttons">
+                    <button id="chats-tab" class="tab-button active">Chats</button>
+                    <button id="orders-tab" class="tab-button">Room Service</button>
+                    <button id="bookings-tab" class="tab-button">Bookings</button>
+                    <button id="feedback-tab" class="tab-button">Feedback</button>
+                </div>
+                
+                <div id="chats-section" class="dashboard-section active">
+                    <div class="card">
+                        <div id="chats-list">
+                            <p class="empty-state" style="text-align: center; padding: 1rem; color: #666;">Loading chats...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="orders-section" class="dashboard-section">
+                    <div class="card">
+                        <div id="orders-list">
+                            <p class="empty-state" style="text-align: center; padding: 1rem; color: #666;">No current room service orders.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="bookings-section" class="dashboard-section">
+                    <div class="card">
+                        <div id="bookings-list">
+                            <p class="empty-state" style="text-align: center; padding: 1rem; color: #666;">No current bookings.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="feedback-section" class="dashboard-section">
+                    <div class="card">
+                        <div id="feedback-list">
+                            <p class="empty-state" style="text-align: center; padding: 1rem; color: #666;">No feedback submitted.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in (in a real implementation, this would validate the JWT)
+            const isLoggedIn = sessionStorage.getItem('staffLoggedIn');
+            if (!isLoggedIn) {
+                window.location.href = '/staff-login.html';
+                return;
+            }
+            
+            // Display staff name
+            const staffName = sessionStorage.getItem('staffName') || 'Staff User';
+            document.getElementById('staff-name').textContent = staffName;
+            
+            // Logout button
+            document.getElementById('logout-button').addEventListener('click', function() {
+                sessionStorage.removeItem('staffLoggedIn');
+                sessionStorage.removeItem('staffName');
+                window.location.href = '/staff-login.html';
+            });
+            
+            // Tab navigation
+            const tabs = ['chats', 'orders', 'bookings', 'feedback'];
+            tabs.forEach(tab => {
+                const button = document.getElementById(`${tab}-tab`);
+                button.addEventListener('click', function() {
+                    // Remove active class from all tabs
+                    tabs.forEach(t => {
+                        document.getElementById(`${t}-tab`).classList.remove('active');
+                        document.getElementById(`${t}-section`).classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked tab
+                    button.classList.add('active');
+                    document.getElementById(`${tab}-section`).classList.add('active');
+                });
+            });
+            
+            // Handle chat notifications
+            const acceptButtons = document.querySelectorAll('.accept-btn');
+            const acknowledgeButtons = document.querySelectorAll('.acknowledge-btn');
+            
+            acceptButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const notificationItem = this.closest('.notification-item');
+                    notificationItem.remove();
+                    updateNotificationCount();
+                });
+            });
+            
+            acknowledgeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const notificationItem = this.closest('.notification-item');
+                    notificationItem.remove();
+                    updateNotificationCount();
+                });
+            });
+            
+            function updateNotificationCount() {
+                const count = document.querySelectorAll('.notification-item:not([style*="opacity"])').length;
+                const badge = document.getElementById('notification-count');
+                badge.textContent = count;
+                
+                if (count === 0) {
+                    badge.style.display = 'none';
+                } else {
+                    badge.style.display = 'inline-flex';
+                }
+            }
+        });
+    </script>
+    
+    <!-- Include the staff-dashboard.js file -->
+    <script src="/js/staff-dashboard.js"></script>
+    
+    <!-- Authentication debugging helper -->
+    <script>
+        // Check authentication status on load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Create hidden debug panel
+            const debugPanel = document.createElement('div');
+            debugPanel.style.display = 'none';
+            debugPanel.style.position = 'fixed';
+            debugPanel.style.bottom = '0';
+            debugPanel.style.right = '0';
+            debugPanel.style.padding = '10px';
+            debugPanel.style.background = 'rgba(0,0,0,0.8)';
+            debugPanel.style.color = 'white';
+            debugPanel.style.zIndex = '9999';
+            debugPanel.style.maxWidth = '300px';
+            debugPanel.style.fontSize = '12px';
+            debugPanel.style.fontFamily = 'monospace';
+            
+            // Add auth status
+            const staffToken = localStorage.getItem('staffToken');
+            const sessionAuth = sessionStorage.getItem('staffLoggedIn');
+            
+            debugPanel.innerHTML = `
+                <h4>Auth Debug (press D to toggle)</h4>
+                <p>localStorage token: ${staffToken ? '✓' : '✗'}</p>
+                <p>sessionStorage auth: ${sessionAuth ? '✓' : '✗'}</p>
+                <button id="fix-auth-btn">Fix Authentication</button>
+            `;
+            
+            document.body.appendChild(debugPanel);
+            
+            // Toggle debug panel with 'D' key
+            document.addEventListener('keydown', (e) => {
+                if (e.key.toLowerCase() === 'd') {
+                    debugPanel.style.display = debugPanel.style.display === 'none' ? 'block' : 'none';
+                }
+            });
+            
+            // Fix auth button
+            document.getElementById('fix-auth-btn').addEventListener('click', () => {
+                // Set both auth methods
+                localStorage.setItem('staffToken', 'DEBUG_TOKEN');
+                sessionStorage.setItem('staffLoggedIn', 'true');
+                sessionStorage.setItem('staffName', 'admin');
+                alert('Debug authentication set. Reload page to apply.');
+            });
+        });
+    </script>
+</body>
+</html> 

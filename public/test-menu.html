@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Mobile Navigation</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    /* Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: Arial, sans-serif;
+    }
+    
+    /* Navigation */
+    .nav {
+      background-color: #3B82F6;
+      position: relative;
+      min-height: 50px;
+      padding: 10px 15px;
+    }
+    
+    /* Hamburger Button */
+    .menu-toggle {
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 30px;
+      height: 21px;
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      cursor: pointer;
+    }
+    
+    .menu-toggle span {
+      display: block;
+      height: 3px;
+      width: 100%;
+      background-color: white;
+      border-radius: 3px;
+    }
+    
+    /* Navigation Links */
+    .nav-links {
+      display: flex;
+    }
+    
+    .nav a {
+      color: white;
+      text-decoration: none;
+      padding: 10px 15px;
+      margin-right: 5px;
+    }
+    
+    /* Mobile Styles */
+    @media (max-width: 768px) {
+      .menu-toggle {
+        display: flex;
+      }
+      
+      .nav-links {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        padding-top: 40px;
+      }
+      
+      .nav-links.active {
+        display: flex;
+      }
+      
+      .nav a {
+        width: 100%;
+        padding: 10px 0;
+        margin: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <div class="menu-toggle" id="menu-toggle">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <div class="nav-links" id="nav-links">
+      <a href="#"><i class="fas fa-home"></i> Home</a>
+      <a href="#"><i class="fas fa-message"></i> Chat</a>
+      <a href="#"><i class="fas fa-utensils"></i> Room Service</a>
+      <a href="#"><i class="fas fa-calendar"></i> Bookings</a>
+    </div>
+  </div>
+  
+  <div style="padding: 20px;">
+    <h1>Test Navigation</h1>
+    <p>This page is for testing the mobile navigation hamburger button visibility.</p>
+  </div>
+  
+  <script>
+    // Mobile menu toggle
+    document.getElementById('menu-toggle').addEventListener('click', function() {
+      this.classList.toggle('active');
+      document.getElementById('nav-links').classList.toggle('active');
+    });
+  </script>
+</body>
+</html> 

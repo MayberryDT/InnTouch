@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inn Touch - Staff Chat</title>
+  <!-- Google Fonts -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Playfair+Display:wght@700&display=swap">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <!-- Styles (Ideally move to a separate CSS file like /css/staff-chat.css) -->
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    :root {
+      /* Colors from guidelines */
+      --primary-blue: #1E40AF;
+      --secondary-blue: #3B82F6;
+      --light-gray: #F9FAFB;
+      --white: #FFFFFF;
+      --text-dark: #111827;
+      --text-light: #6B7280; /* Added for subtle text */
+      --success-green: #10B981;
+      --error-red: #EF4444;
+      --status-connecting: #F59E0B; /* Amber for connecting */
+      --status-disconnected: var(--error-red);
+      --status-connected: var(--success-green);
+      --ai-purple: #9b59b6; /* Keep AI color distinct */
+
+      /* Fonts from guidelines */
+      --font-primary: 'Inter', sans-serif;
+      --font-secondary: 'Playfair Display', serif;
+
+      /* Spacing */
+      --space-xs: 0.5rem;  /* 8px */
+      --space-sm: 0.75rem; /* 12px */
+      --space-md: 1rem;    /* 16px */
+      --space-lg: 1.5rem;  /* 24px */
+      --space-xl: 2rem;    /* 32px */
+      --space-xxl: 3rem;   /* 48px */
+    }
+
+    body {
+      font-family: var(--font-primary);
+      line-height: 1.6;
+      margin: 0;
+      background-color: var(--light-gray);
+      color: var(--text-dark);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .nav { /* Reusing existing nav style */
+      background-color: var(--primary-blue);
+      padding: var(--space-sm) var(--space-xl);
+      color: var(--white);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 3.5rem; /* 56px */
+      box-sizing: border-box;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .nav a {
+      color: var(--white);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 1.125rem; /* 18px */
+      margin-right: var(--space-xl);
+      position: relative;
+      transition: color 0.2s ease-in-out;
+    }
+    .nav a:hover::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background-color: var(--secondary-blue);
+      animation: underline-grow 0.2s ease-out;
+    }
+    .nav .nav-right {
+      display: flex;
+      align-items: center;
+    }
+    .nav .nav-right span {
+       margin-right: var(--space-md);
+       font-size: 0.9rem;
+    }
+    .nav button {
+      background: none;
+      border: none;
+      color: var(--white);
+      cursor: pointer;
+      font-size: 1.125rem;
+      transition: transform 0.1s ease;
+    }
+    .nav button:hover {
+      color: var(--secondary-blue);
+    }
+     .nav button:active {
+      transform: scale(0.95);
+    }
+    .nav i {
+      margin-right: var(--space-xs);
+    }
+
+
+    @keyframes underline-grow {
+      from { width: 0; }
+      to { width: 100%; }
+    }
+
+
+    .container {
+      flex-grow: 1;
+      max-width: 1200px;
+      margin: var(--space-xl) auto;
+      padding: 0 var(--space-xl); /* Page padding */
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: var(--space-xl);
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        grid-template-columns: 1fr; /* Stack columns on mobile */
+        padding: 0 var(--space-md);
+         margin: var(--space-lg) auto;
+      }
+      #guest-list-sidebar {
+        order: 1; /* Show sidebar first on mobile */
+      }
+      #chat-container {
+         order: 2; /* Chat below sidebar */
+         height: auto; /* Adjust height */
+      }
+    }
+
+    /* Sidebar (Guest List & Start Chat) */
+    #guest-list-sidebar {
+      background-color: var(--white);
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-self: start; /* Stick to top */
+      position: sticky;
+      top: calc(3.5rem + var(--space-xl)); /* Below nav + margin */
+    }
+
+    .sidebar-section {
+      padding: var(--space-lg);
+      border-bottom: 1px solid #eee;
+    }
+    .sidebar-section:last-child {
+      border-bottom: none;
+    }
+
+    .sidebar-section h2 {
+      font-family: var(--font-secondary);
+      font-size: 1.25rem; /* Slightly smaller */
+      color: var(--primary-blue);
+      margin-top: 0;
+      margin-bottom: var(--space-md);
+    }
+
+    #start-chat-form label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: var(--space-xs);
+      font-size: 0.9rem;
+    }
+
+    #start-chat-form input[type="text"] {
+      width: 100%;
+      padding: var(--space-sm);
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-bottom: var(--space-sm);
+      font-size: 1rem;
+      box-sizing: border-box;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+     #start-chat-form input[type="text"]:focus {
+      outline: none;
+      border-color: var(--secondary-blue);
+      box-shadow: 0 0 0 2px rgba(59,130,246,0.5);
+    }
+
+    #start-chat-form button {
+      width: 100%;
+      padding: var(--space-sm) var(--space-md);
+      background: linear-gradient(to right, var(--secondary-blue), var(--primary-blue));
+      color: var(--white);
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 500;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+     #start-chat-form button:hover {
+      transform: scale(1.02);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    #start-chat-form button:active {
+       transform: scale(0.98);
+    }
+     #start-chat-error {
+      color: var(--error-red);
+      font-size: 0.8rem;
+      margin-top: var(--space-xs);
+      display: none; /* Hidden by default */
+    }
+
+
+    #guest-list-header {
+      font-family: var(--font-secondary);
+      font-size: 1.25rem;
+      color: var(--primary-blue);
+      margin-top: 0;
+      margin-bottom: var(--space-md);
+       padding: var(--space-lg);
+       padding-bottom: 0; /* Adjust padding */
+    }
+
+    #guest-items {
+      max-height: 40vh; /* Limit height and make scrollable */
+      overflow-y: auto;
+       padding: 0 var(--space-lg) var(--space-lg); /* Padding for items */
+    }
+
+    .guest-item {
+      padding: var(--space-md);
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      transition: background-color 0.2s, border-left-color 0.2s;
+      border-left: 4px solid transparent;
+      margin-left: -4px; /* Offset border */
+      position: relative; /* For escalated icon */
+    }
+     .guest-item:last-child {
+      border-bottom: none;
+    }
+     .guest-item:hover {
+      background-color: #f0f4ff; /* Light blue hover */
+    }
+    .guest-item.active {
+      background-color: #e0eaff; /* Slightly darker blue */
+      border-left-color: var(--secondary-blue);
+    }
+    .guest-name {
+      font-weight: 500;
+      margin-bottom: var(--space-xs);
+    }
+    .guest-room, .guest-message, .guest-time {
+      font-size: 0.85rem;
+      color: var(--text-light);
+      margin-bottom: 2px;
+    }
+    .guest-message {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+       color: var(--text-dark); /* Make last message more prominent */
+    }
+    .guest-time {
+       font-style: italic;
+    }
+
+
+    .escalated::after {
+      content: "!";
+      position: absolute;
+      top: calc(50% - 10px);
+      right: var(--space-md);
+      background-color: var(--error-red);
+      color: white;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 20px;
+      font-weight: bold;
+      font-size: 0.8rem;
+    }
+
+    .no-chats, .loading-chats {
+      padding: var(--space-lg);
+      text-align: center;
+      color: var(--text-light);
+      font-style: italic;
+    }
+     .loading-chats i {
+       margin-right: var(--space-xs);
+     }
+
+
+    /* Chat Area */
+    #chat-container {
+      background-color: var(--white);
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 3.5rem - var(--space-xl) * 2); /* Full height minus nav and margins */
+      max-height: 85vh; /* Add a max height */
+    }
+
+
+    #no-chat-selected {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      padding: var(--space-xl);
+      color: var(--text-light);
+    }
+     #no-chat-selected i {
+       font-size: 3rem;
+       margin-bottom: var(--space-lg);
+       color: #ccc;
+     }
+      #no-chat-selected h3 {
+        font-family: var(--font-secondary);
+        color: var(--primary-blue);
+        margin-bottom: var(--space-sm);
+      }
+
+
+    #chat-area {
+      display: flex; /* Initially hidden if no guestId */
+      flex-direction: column;
+      flex-grow: 1;
+      overflow: hidden; /* Important for layout */
+    }
+
+    #chat-header {
+      padding: var(--space-md) var(--space-lg);
+      background-color: var(--primary-blue);
+      color: var(--white);
+      font-weight: 500;
+      font-size: 1.125rem;
+       display: flex;
+       justify-content: space-between;
+       align-items: center;
+    }
+
+    #connection-status {
+      font-size: 0.8rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      color: var(--white);
+      margin-left: var(--space-sm);
+    }
+    .status-connected { background-color: var(--status-connected); }
+    .status-disconnected { background-color: var(--status-disconnected); }
+    .status-connecting, .status-reconnecting { background-color: var(--status-connecting); }
+    .status-offline { background-color: var(--text-light); }
+
+
+    #chat-history {
+      flex-grow: 1; /* Take available space */
+      overflow-y: auto;
+      padding: var(--space-lg);
+    }
+
+    .chat-message {
+      margin-bottom: var(--space-md);
+      padding: var(--space-sm) var(--space-md);
+      border-radius: 12px; /* More rounded */
+      max-width: 75%;
+      position: relative;
+      animation: slideIn 0.3s ease-in; /* Animation for new messages */
+      word-wrap: break-word; /* Ensure long words break */
+    }
+
+    .guest {
+      background-color: var(--secondary-blue); /* Brighter blue for guest */
+      color: var(--white);
+      border-bottom-left-radius: 4px; /* Slightly different shape */
+      align-self: flex-start;
+       margin-right: auto; /* Push to left */
+    }
+
+    .staff {
+      background-color: var(--light-gray); /* Light gray for staff */
+      color: var(--text-dark);
+      border: 1px solid #e5e7eb; /* Subtle border */
+      border-bottom-right-radius: 4px;
+      align-self: flex-end;
+      margin-left: auto; /* Push to right */
+    }
+
+    .ai {
+      background-color: var(--ai-purple); /* Use defined AI color */
+      color: var(--white);
+      align-self: flex-start;
+       margin-right: auto; /* Push to left */
+       border-bottom-left-radius: 4px;
+    }
+
+    .system, .error {
+      background-color: #e5e7eb; /* Neutral gray for system/error */
+      color: var(--text-light);
+      margin: var(--space-sm) auto; /* Centered */
+      text-align: center;
+      max-width: 60%;
+      font-size: 0.8rem;
+      font-style: italic;
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: 4px;
+    }
+    .error {
+       background-color: #fee2e2; /* Light red for errors */
+       color: var(--error-red);
+       font-style: normal;
+    }
+
+
+    .message-sender {
+      font-weight: 500;
+      font-size: 0.8rem;
+      margin-bottom: 4px;
+      color: rgba(255,255,255,0.8); /* Semi-transparent white on colored bg */
+    }
+     .staff .message-sender {
+       color: var(--primary-blue); /* Darker sender name for staff */
+     }
+     .ai .message-sender {
+       color: rgba(255,255,255,0.8);
+     }
+
+    .message-time {
+      font-size: 0.7rem;
+      opacity: 0.7;
+       position: absolute;
+       bottom: 5px;
+       right: 10px;
+       color: rgba(255,255,255,0.7);
+    }
+     .staff .message-time {
+       color: var(--text-light);
+     }
+      .guest .message-time, .ai .message-time {
+        color: rgba(255,255,255,0.7);
+      }
+
+
+    .message-content {
+      margin-top: 2px; /* Smaller gap */
+       padding-right: 50px; /* Make space for timestamp */
+    }
+    .staff .message-content {
+       padding-right: 50px;
+    }
+
+
+    #message-form {
+      display: flex;
+      padding: var(--space-md) var(--space-lg);
+      background-color: var(--light-gray); /* Match body background */
+      border-top: 1px solid #e5e7eb;
+    }
+
+    #message-input {
+      flex-grow: 1;
+      padding: var(--space-sm) var(--space-md);
+      border: 1px solid #ccc;
+      border-radius: 20px; /* Pill shape */
+      font-size: 1rem;
+      margin-right: var(--space-sm);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+     #message-input:focus {
+       outline: none;
+       border-color: var(--secondary-blue);
+       box-shadow: 0 0 0 2px rgba(59,130,246,0.5);
+     }
+
+    #send-button {
+      padding: var(--space-sm) var(--space-lg);
+      background-color: var(--primary-blue);
+      color: var(--white);
+      border: none;
+      border-radius: 20px; /* Pill shape */
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+     #send-button:hover {
+      background-color: var(--secondary-blue);
+      transform: scale(1.05);
+     }
+    #send-button:active {
+      transform: scale(0.95);
+    }
+    #send-button i {
+       margin-left: var(--space-xs);
+    }
+
+    /* Animations */
+    @keyframes slideIn {
+      from { transform: translateY(10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <div class="nav">
+     <a href="/staff-dashboard.html"><i class="fas fa-tachometer-alt"></i> Staff Dashboard</a>
+     <div class="nav-right">
+        <span id="staff-name-display">Staff</span> <!-- Placeholder -->
+        <button id="logout-button" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
+     </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="container">
+    <!-- Left Sidebar: Start Chat & Guest List -->
+    <div id="guest-list-sidebar">
+      <!-- Section to Start Chat by Room -->
+      <div class="sidebar-section">
+        <h2>Start New Chat</h2>
+        <form id="start-chat-form">
+          <label for="room-number-input">Enter Room Number:</label>
+          <input type="text" id="room-number-input" placeholder="e.g., 101" required>
+          <div id="start-chat-error" class="error-message"></div> <!-- Error message area -->
+          <button type="submit" id="start-chat-button">
+            <i class="fas fa-comments"></i> Start Chat
+          </button>
+        </form>
+      </div>
+
+       <!-- Section for Active/Escalated Chats -->
+       <div id="active-chats-section">
+         <h2 id="guest-list-header">Active Chats (0)</h2>
+         <div id="guest-items">
+            <!-- Loading/Empty state -->
+            <div class="loading-chats"><i class="fas fa-spinner fa-spin"></i> Loading chats...</div>
+            <!-- <div class="no-chats">No active chats</div> -->
+            <!-- Guest items will be added dynamically -->
+         </div>
+       </div>
+    </div>
+
+    <!-- Right Side: Chat Container -->
+    <div id="chat-container">
+      <!-- Placeholder when no chat is selected -->
+      <div id="no-chat-selected">
+         <i class="fas fa-comments"></i>
+         <h3>Select a chat or start a new one</h3>
+         <p>Choose an active chat from the list or enter a room number to begin.</p>
+      </div>
+
+      <!-- Actual Chat Area (hidden initially) -->
+      <div id="chat-area" style="display: none;">
+        <div id="chat-header">
+          <div>
+            <span id="current-guest-name">Guest</span> - Room <span id="current-guest-room">000</span>
+          </div>
+          <span id="connection-status">Connecting...</span>
+        </div>
+
+        <div id="chat-history">
+          <!-- Chat messages appear here -->
+          <!-- Example Messages (for styling reference) -->
+          <!--
+          <div class="chat-message guest">
+            <div class="message-sender">Jane Doe</div>
+            <div class="message-content">Hello, I need more towels please.</div>
+            <div class="message-time">10:30 AM</div>
+          </div>
+          <div class="chat-message staff">
+             <div class="message-sender">Reception Staff</div>
+            <div class="message-content">Certainly, I'll send some up right away.</div>
+             <div class="message-time">10:31 AM</div>
+          </div>
+           <div class="chat-message ai">
+             <div class="message-sender">AI Assistant</div>
+            <div class="message-content">I have notified housekeeping about the towel request for Room 101.</div>
+             <div class="message-time">10:31 AM</div>
+          </div>
+          <div class="chat-message system">Chat started by staff</div>
+           <div class="chat-message error">Failed to send message.</div>
+           -->
+        </div>
+
+        <form id="message-form">
+          <input type="text" id="message-input" placeholder="Type your message..." autocomplete="off">
+          <button id="send-button" type="submit">Send <i class="fas fa-paper-plane"></i></button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/staff-chat.js" defer></script>
+</body>
+</html> 
