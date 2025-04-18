@@ -129,7 +129,7 @@ const findGuestByRoomAndName = async (roomNumber, lastName) => { // Make async
   const query = `
     SELECT id, name, room_number, check_in, check_out 
     FROM guests 
-    WHERE room_number = ? AND LOWER(name) LIKE LOWER(?)
+    WHERE room_number = $1 AND LOWER(name) LIKE LOWER($2)
   `;
 
   // Use await with promisified db.get
